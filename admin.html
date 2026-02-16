@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background:#020617;
+  color:white;
+  padding:30px;
+}
+.card {
+  background:#0f172a;
+  padding:20px;
+  border-radius:14px;
+  max-width:420px;
+  margin:auto;
+}
+input {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
+}
+button {
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  cursor:pointer;
+  opacity:0.5;
+}
+button.enabled {
+  opacity:1;
+}
+.load { background:#3b82f6; opacity:1 }
+.deposit { background:#22c55e }
+.withdraw { background:#ef4444 }
+.balance {
+  margin-top:15px;
+  font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Admin Balance Control</h2>
+
+  <input id="telegramId" placeholder="Telegram User ID">
+  <input id="password" placeholder="Admin Password" type="password">
+
+  <button class="load" onclick="loadBalance()">Load Balance</button>
+
+  <div class="balance" id="balanceText"></div>
+
+  <button id="depositBtn" class="deposit" onclick="action('deposit')">
+    ➕ Deposit
+  </button>
+
+  <button id="withdrawBtn" class="withdraw" onclick="action('withdraw')">
+    ➖ Withdraw
+  </button>
+</div>
+
+<script>
+const API = "https://YOUR-RENDER-URL";
+
+const depositBtn = document.getElementById("depositBtn");
+const withdrawBtn = document.getElementById("withdrawBtn");
+
+depositBtn.disabled = true;
+withdrawBtn.disabled = true;
+
+function enableButtons() {
+  depositBtn.disabled = false;
+  withdrawBtn.disabled = false;
+  depositBtn.classList.add("enabled");
+  withdrawBtn.classList.add("enabled");
+}
+
+async function loadBalance() {
+  const res = await fetch(API + "/admin/get-balance", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-password": password.value
+    },
+    body: JSON.stringify({
+      telegramId: telegramId.value
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) return alert(data.error);
+
+  document.getElementById("balanceText").innerText =
+    `Current Balance: ₦${data.ngn.toLocaleString()}`;
+
+  enableButtons();
+}
+
+async function action(type) {
+  const amount = prompt(
+    type === "deposit"
+      ? "Enter deposit amount (NGN)"
+      : "Enter withdrawal amount (NGN)"
+  );
+
+  if (!amount || isNaN(amount) || Number(amount) <= 0) {
+    return alert("Invalid amount");
+  }
+
+  const res = await fetch(API + "/admin/update-balance", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-password": password.value
+    },
+    body: JSON.stringify({
+      telegramId: telegramId.value,
+      amount: Number(amount),
+      type
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) return alert(data.error);
+
+  document.getElementById("balanceText").innerText =
+    `Current Balance: ₦${data.newBalance.toLocaleString()}`;
+}
+</script>
+
+</body>
+</html>

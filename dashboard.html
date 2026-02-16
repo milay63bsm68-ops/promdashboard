@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>User Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://milay63bsm68-ops.github.io/repro/promolist.js"></script>
+<script src="balance.js"></script>
+
+<style>
+body {
+  background:#020617;
+  color:white;
+  font-family:Arial, sans-serif;
+  padding:20px;
+}
+.card {
+  background:#0f172a;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:15px;
+}
+button {
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  cursor:pointer;
+  margin-top:10px;
+}
+.withdraw {
+  background:#3b82f6;
+}
+.unlock {
+  background:#22c55e;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card" id="user"></div>
+<div class="card" id="balance"></div>
+<div class="card" id="promo"></div>
+
+<div class="card">
+  <button class="withdraw" onclick="location.href='withdraw.html'">
+    💸 Withdraw
+  </button>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+
+const user = tg.initDataUnsafe.user;
+const telegramId = String(user.id);
+const name = user.first_name || "Unknown";
+const username = user.username ? "@" + user.username : "No username";
+
+document.getElementById("user").innerHTML = `
+<b>Name:</b> ${name}<br>
+<b>Username:</b> ${username}<br>
+<b>Telegram ID:</b> ${telegramId}
+`;
+
+const ngn = window.USER_BALANCES?.[telegramId]?.ngn || 0;
+
+fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD")
+  .then(r => r.json())
+  .then(d => {
+    const usd = (ngn * d.rates.USD).toFixed(2);
+    document.getElementById("balance").innerHTML = `
+      <b>Balance</b><br>
+      ₦${ngn.toLocaleString()} ≈ $${usd}
+    `;
+  });
+
+const hasPromo =
+  Array.isArray(window.PROMO_LIST) &&
+  window.PROMO_LIST.includes(telegramId);
+
+document.getElementById("promo").innerHTML = hasPromo
+  ? `<b>Promo Access:</b> ✅ Enabled`
+  : `<button class="unlock" onclick="location.href='unlockpromo.html'">
+       🔓 Unlock Promo Earnings
+     </button>`;
+</script>
+
+</body>
+</html>
