@@ -175,7 +175,18 @@ function showMsg(text, type="success") {
   msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
 }
 
-// Load balance from server
+// Fetch real USD rate
+async function fetchUsdRate() {
+  try {
+    const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
+    const data = await res.json();
+    return data.rates.USD || 0.0026;
+  } catch {
+    return 0.0026;
+  }
+}
+
+// Load user balance
 async function loadBalance() {
   showMsg("Loading balance…", "loading");
   try {
@@ -186,12 +197,14 @@ async function loadBalance() {
     });
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
-    usdRate = d?.usdRate || 0.002;
+
+    usdRate = await fetchUsdRate(); // fetch USD rate
+    const usd = balanceNGN * usdRate;
 
     balanceBox.innerHTML =
-      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${d.usd}`;
+      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${usd.toFixed(2)}`;
 
-    if (balanceNGN < 5000 && balanceNGN*usdRate < 20) {
+    if (balanceNGN < 5000 && usd < 20) {
       lowBalanceMsg.classList.remove("hidden");
       withdrawForm.classList.add("hidden");
     } else {
@@ -265,7 +278,7 @@ async function withdraw() {
     balanceBox.innerHTML =
       `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
 
-    // Notify admin via new endpoint
+    // Notify admin
     await fetch(API + "/notify-admin", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
