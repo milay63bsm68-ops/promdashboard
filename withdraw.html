@@ -81,7 +81,7 @@ button:disabled { opacity:0.5; }
   <!-- BALANCE -->
   <div class="card" id="balanceBox">Loading balance…</div>
 
-  <!-- LOW BALANCE MESSAGE -->
+  <!-- MESSAGE FOR LOW BALANCE -->
   <div class="card hidden" id="lowBalanceMsg">
     <div class="msg error">
       Minimum balance required to withdraw:<br>
@@ -101,7 +101,7 @@ button:disabled { opacity:0.5; }
       <option value="crypto">Crypto (BNB BEP20)</option>
     </select>
 
-    <!-- BANK FIELDS -->
+    <!-- BANK -->
     <div id="bankFields" class="hidden">
       <h3 style="margin-top:10px">Bank Details</h3>
       <select id="bank">
@@ -124,7 +124,7 @@ button:disabled { opacity:0.5; }
       <div class="small">Minimum: ₦5,000</div>
     </div>
 
-    <!-- CRYPTO FIELDS -->
+    <!-- CRYPTO -->
     <div id="cryptoFields" class="hidden">
       <h3 style="margin-top:10px">Crypto Details</h3>
       <input id="wallet" placeholder="BNB Smart Chain (BEP20) Address">
@@ -137,14 +137,17 @@ button:disabled { opacity:0.5; }
     <input id="whatsapp" placeholder="WhatsApp Number">
     <input id="phone" placeholder="Calling Number">
 
-    <button id="withdrawBtn" onclick="withdraw()" disabled>Submit Withdrawal</button>
+    <button id="withdrawBtn" onclick="withdraw()" disabled>
+      Submit Withdrawal
+    </button>
+
     <div id="msgBox"></div>
   </div>
 
 </div>
 
 <script>
-const API = "https://promdashboard.onrender.com"; // Your server URL
+const API = "https://promdashboard.onrender.com";
 const tg = window.Telegram.WebApp;
 tg.ready();
 
@@ -157,19 +160,6 @@ const msgBox = document.getElementById("msgBox");
 const withdrawBtn = document.getElementById("withdrawBtn");
 const withdrawForm = document.getElementById("withdrawForm");
 const lowBalanceMsg = document.getElementById("lowBalanceMsg");
-
-const method = document.getElementById("method");
-const bankFields = document.getElementById("bankFields");
-const cryptoFields = document.getElementById("cryptoFields");
-const bank = document.getElementById("bank");
-const otherBank = document.getElementById("otherBank");
-const acctName = document.getElementById("acctName");
-const acctNumber = document.getElementById("acctNumber");
-const bankAmount = document.getElementById("bankAmount");
-const wallet = document.getElementById("wallet");
-const cryptoAmount = document.getElementById("cryptoAmount");
-const whatsapp = document.getElementById("whatsapp");
-const phone = document.getElementById("phone");
 
 let balanceNGN = 0;
 let usdRate = 0;
@@ -188,9 +178,8 @@ function showMsg(text, type="success") {
 // Load user balance
 async function loadBalance() {
   showMsg("Loading balance…", "loading");
-
   try {
-    const r = await fetch(API + "/get-balance", { // <-- public route
+    const r = await fetch(API + "/get-balance", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ telegramId })
@@ -198,9 +187,10 @@ async function loadBalance() {
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
 
-    const rateRes = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
-    const rateData = await rateRes.json();
-    usdRate = rateData?.info?.rate || 0.002;
+    // Live USD rate
+    const rate = await fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD");
+    const rd = await rate.json();
+    usdRate = rd?.rates?.USD || 0.002;
 
     balanceBox.innerHTML =
       `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
@@ -224,12 +214,11 @@ loadBalance();
 
 // Show/hide fields
 method.onchange = () => {
-  bankFields.classList.toggle("hidden", method.value!=="bank");
-  cryptoFields.classList.toggle("hidden", method.value!=="crypto");
+  bankFields.style.display = method.value==="bank" ? "block" : "none";
+  cryptoFields.style.display = method.value==="crypto" ? "block" : "none";
 };
-
 bank.onchange = () => {
-  otherBank.classList.toggle("hidden", bank.value!=="Other");
+  otherBank.style.display = bank.value==="Other" ? "block" : "none";
 };
 
 // Withdraw function
@@ -277,8 +266,7 @@ async function withdraw() {
 
     showMsg("✅ Withdrawal submitted successfully!", "success");
     withdrawBtn.disabled = true;
-    // Update displayed balance immediately
-    balanceNGN -= Math.round(amountNGN);
+    balanceNGN = data.newBalance;
     balanceBox.innerHTML =
       `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
 
