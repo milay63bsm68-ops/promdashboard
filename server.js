@@ -87,7 +87,7 @@ app.post("/admin/update-balance", auth, async (req, res) => {
 
     // Update GitHub file
     const githubRes = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
+      `https://api.github.com/repos/${GITHUB_REPO}/${BALANCE_FILE}`,
       {
         method: "PUT",
         headers: {
