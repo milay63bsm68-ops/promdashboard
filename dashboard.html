@@ -45,7 +45,7 @@ button {
 
 <div class="container">
   <div class="card" id="user"></div>
-  <div class="card" id="balance"></div>
+  <div class="card" id="balance">Loading balance...</div>
   <div class="card" id="promo"></div>
 
   <div class="card">
@@ -64,26 +64,28 @@ const telegramId = user ? String(user.id) : null;
 const name = user?.first_name || "Guest";
 const username = user?.username ? "@" + user.username : "No username";
 
-// Show user info
+// Display user info
 document.getElementById("user").innerHTML = `
 <b>Name:</b> ${name}<br>
 <b>Username:</b> ${username}<br>
 <b>Telegram ID:</b> ${telegramId || "N/A"}
 `;
 
-// Load balance safely
-async function loadBalance() {
-  let ngn = 0;
+// Wait until balance.js has loaded
+function getUserBalance() {
+  if (!window.USER_BALANCES) return 0;
+  if (!telegramId || !window.USER_BALANCES[telegramId]) return 0;
+  return window.USER_BALANCES[telegramId].ngn || 0;
+}
 
-  // Check if ID exists in balance.js
-  if (telegramId && window.USER_BALANCES?.[telegramId]?.ngn) {
-    ngn = window.USER_BALANCES[telegramId].ngn;
-  }
+// Load balance and convert to USD
+async function loadBalance() {
+  let ngn = getUserBalance();
 
   try {
     const res = await fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD");
     const data = await res.json();
-    const usd = ngn * (data.rates.USD || 0.0024); // fallback if API fails
+    const usd = ngn * (data.rates?.USD || 0.0024); // fallback
     document.getElementById("balance").innerHTML = `
       <b>Balance</b><br>
       ₦${ngn.toLocaleString()} ≈ $${usd.toFixed(2)}
@@ -97,7 +99,7 @@ async function loadBalance() {
 }
 loadBalance();
 
-// Promo access
+// Check promo access
 const hasPromo = Array.isArray(window.PROMO_LIST) && window.PROMO_LIST.includes(telegramId);
 
 document.getElementById("promo").innerHTML = hasPromo
