@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://milay63bsm68-ops.github.io/repro/promolist.js"></script>
 <script src="balance.js"></script>
 
 <style>
@@ -54,6 +53,12 @@ button {
     </button>
   </div>
 </div>
+
+<!-- Load PROMO_LIST properly as a module -->
+<script type="module">
+  import { PROMO_LIST } from 'https://milay63bsm68-ops.github.io/repro/promolist.js';
+  window.PROMO_LIST = PROMO_LIST; // make it global so old code can use it
+</script>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -103,12 +108,27 @@ async function loadBalance() {
 loadBalance();
 
 // Check promo access
-const hasPromo = Array.isArray(window.PROMO_LIST) && window.PROMO_LIST.includes(telegramId);
-document.getElementById("promo").innerHTML = hasPromo
-  ? `<b>Promo Access:</b> ✅ Enabled`
-  : `<button class="unlock" onclick="location.href='unlockpromo.html'">
-       🔓 Unlock Promo Earnings
-     </button>`;
+function checkPromo() {
+  const hasPromo = Array.isArray(window.PROMO_LIST) && window.PROMO_LIST.includes(telegramId);
+  document.getElementById("promo").innerHTML = hasPromo
+    ? `<b>Promo Access:</b> ✅ Enabled`
+    : `<button class="unlock" onclick="location.href='unlockpromo.html'">
+         🔓 Unlock Promo Earnings
+       </button>`;
+}
+
+// Wait until PROMO_LIST is loaded
+if (window.PROMO_LIST) {
+  checkPromo();
+} else {
+  // if module is still loading, poll until available
+  const interval = setInterval(() => {
+    if (window.PROMO_LIST) {
+      clearInterval(interval);
+      checkPromo();
+    }
+  }, 50);
+}
 </script>
 
 </body>
