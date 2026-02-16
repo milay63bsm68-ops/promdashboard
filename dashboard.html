@@ -19,7 +19,7 @@ body {
 }
 .container {
   max-width:480px;
-  margin:30px auto 0 auto; /* push content slightly down */
+  margin:30px auto 0 auto;
 }
 .card {
   background:#0f172a;
@@ -71,37 +71,39 @@ document.getElementById("user").innerHTML = `
 <b>Telegram ID:</b> ${telegramId || "N/A"}
 `;
 
-// Wait until balance.js has loaded
+// Get balance from balance.js
 function getUserBalance() {
   if (!window.USER_BALANCES) return 0;
   if (!telegramId || !window.USER_BALANCES[telegramId]) return 0;
   return window.USER_BALANCES[telegramId].ngn || 0;
 }
 
-// Load balance and convert to USD
-async function loadBalance() {
-  let ngn = getUserBalance();
-
+// Fetch real-life USD rate
+async function fetchUsdRate() {
   try {
-    const res = await fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD");
+    const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
     const data = await res.json();
-    const usd = ngn * (data.rates?.USD || 0.0024); // fallback
-    document.getElementById("balance").innerHTML = `
-      <b>Balance</b><br>
-      ₦${ngn.toLocaleString()} ≈ $${usd.toFixed(2)}
-    `;
+    return data.rates.USD || 0.0026;
   } catch {
-    document.getElementById("balance").innerHTML = `
-      <b>Balance</b><br>
-      ₦${ngn.toLocaleString()} ≈ $0.00
-    `;
+    return 0.0026;
   }
+}
+
+// Load balance and show USD
+async function loadBalance() {
+  const ngn = getUserBalance();
+  const usdRate = await fetchUsdRate();
+  const usd = ngn * usdRate;
+
+  document.getElementById("balance").innerHTML = `
+    <b>Balance</b><br>
+    ₦${ngn.toLocaleString()} ≈ $${usd.toFixed(2)}
+  `;
 }
 loadBalance();
 
 // Check promo access
 const hasPromo = Array.isArray(window.PROMO_LIST) && window.PROMO_LIST.includes(telegramId);
-
 document.getElementById("promo").innerHTML = hasPromo
   ? `<b>Promo Access:</b> ✅ Enabled`
   : `<button class="unlock" onclick="location.href='unlockpromo.html'">
