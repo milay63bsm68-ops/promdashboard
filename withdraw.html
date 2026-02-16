@@ -175,18 +175,7 @@ function showMsg(text, type="success") {
   msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
 }
 
-// Fetch USD rate
-async function loadUSDRate() {
-  try {
-    const r = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
-    const d = await r.json();
-    return d?.info?.rate || 0.002;
-  } catch {
-    return 0.002;
-  }
-}
-
-// Load user balance
+// Load balance from server
 async function loadBalance() {
   showMsg("Loading balance…", "loading");
   try {
@@ -197,11 +186,10 @@ async function loadBalance() {
     });
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
-
-    usdRate = await loadUSDRate();
+    usdRate = d?.usdRate || 0.002;
 
     balanceBox.innerHTML =
-      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${d.usd}`;
 
     if (balanceNGN < 5000 && balanceNGN*usdRate < 20) {
       lowBalanceMsg.classList.remove("hidden");
@@ -273,10 +261,20 @@ async function withdraw() {
     if (!res.ok) throw new Error(data.error || "Withdrawal failed");
 
     showMsg("✅ Withdrawal submitted successfully!", "success");
-    withdrawBtn.disabled = true;
     balanceNGN = data.newBalance;
     balanceBox.innerHTML =
       `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+
+    // Notify admin via new endpoint
+    await fetch(API + "/notify-admin", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        message: `User ${telegramId} completed withdrawal of ₦${Math.round(amountNGN)} via ${methodVal}`
+      })
+    });
+
+    withdrawBtn.disabled = true;
 
   } catch (err) {
     showMsg("❌ Withdrawal failed: "+err.message, "error");
