@@ -2,207 +2,264 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Withdraw Funds</title>
+<title>Withdraw</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
+* {
+  box-sizing: border-box;
+}
+
 body {
   background:#020617;
   color:white;
   font-family:Arial, sans-serif;
-  padding:10px;
+  padding:14px;
+  margin:0;
+  overflow-x:hidden;
 }
+
+.container {
+  max-width:420px;
+  margin:0 auto;
+}
+
 .card {
   background:#0f172a;
-  padding:14px;
-  border-radius:12px;
+  padding:12px;
+  border-radius:14px;
   margin-bottom:12px;
 }
+
+h3 {
+  margin:0 0 8px 0;
+  font-size:14px;
+  font-weight:bold;
+}
+
+label {
+  font-size:13px;
+  opacity:0.9;
+}
+
+input, select {
+  width:100%;
+  padding:9px;
+  margin-top:6px;
+  border-radius:10px;
+  border:none;
+  background:#020617;
+  color:white;
+  font-size:14px;
+}
+
 button {
   width:100%;
-  padding:12px;
+  padding:11px;
+  margin-top:12px;
   border:none;
   border-radius:12px;
+  background:#3b82f6;
+  color:white;
   font-weight:bold;
-  cursor:pointer;
-  margin-top:8px;
+  font-size:14px;
 }
-.withdraw { background:#3b82f6; color:white; }
-.error { background:#ef4444; color:white; padding:8px; margin-top:8px; border-radius:8px; }
-.success { background:#22c55e; color:white; padding:8px; margin-top:8px; border-radius:8px; }
-.loading { background:#facc15; color:black; padding:8px; margin-top:8px; border-radius:8px; }
-.step { display:none; }
-.step.active { display:block; }
-input, select { width:100%; padding:8px; margin:6px 0; border-radius:8px; border:none; background:#1f2937; color:white; }
-#otherBankInput { display:none; margin-top:4px; }
+
+button:disabled {
+  opacity:0.5;
+}
+
+.msg {
+  margin-top:10px;
+  padding:8px;
+  border-radius:8px;
+  font-size:13px;
+}
+
+.error { background:#ef4444; }
+.success { background:#22c55e; }
+.loading { background:#facc15; color:black; }
+
+.small {
+  font-size:12px;
+  opacity:0.75;
+}
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <b>Balance:</b> <span id="balanceText">--</span>
-</div>
+<div class="container">
 
-<div class="card step active" id="step1">
-  <p>Select withdrawal method:</p>
-  <select id="method">
-    <option value="">Select</option>
-    <option value="bank">Bank Transfer (₦)</option>
-    <option value="crypto">Crypto (BNB/BEP20)</option>
-  </select>
-  <button id="nextBtn1" class="withdraw">Next</button>
-</div>
+  <!-- USER INFO -->
+  <div class="card" id="userInfo">Loading user…</div>
 
-<div class="card step" id="stepBank">
-  <p>Bank Details:</p>
-  <select id="bankSelect">
-    <option value="">Select Bank / Wallet</option>
-    <option value="Opay">Opay</option>
-    <option value="PalmPay">PalmPay</option>
-    <option value="Moniepoint">Moniepoint</option>
-    <option value="GTBank">GTBank</option>
-    <option value="AccessBank">Access Bank</option>
-    <option value="ZenithBank">Zenith Bank</option>
-    <option value="UBA">UBA</option>
-    <option value="FirstBank">First Bank</option>
-    <option value="FCMB">FCMB</option>
-    <option value="SterlingBank">Sterling Bank</option>
-    <option value="Other">Other</option>
-  </select>
-  <input id="otherBankInput" placeholder="Enter your bank name">
-  <input id="accountName" placeholder="Account Name">
-  <input id="accountNumber" placeholder="Account Number">
-  <input id="bankAmount" placeholder="Amount to withdraw (₦)">
-  <button id="nextBtnBank" class="withdraw">Next</button>
-</div>
+  <!-- BALANCE -->
+  <div class="card" id="balanceBox">Loading balance…</div>
 
-<div class="card step" id="stepCrypto">
-  <p>Crypto Details:</p>
-  <input id="cryptoAddress" placeholder="BNB Smart Chain (BEP20) Address">
-  <input id="cryptoAmount" placeholder="Amount to withdraw ($)">
-  <button id="nextBtnCrypto" class="withdraw">Next</button>
-</div>
+  <!-- WITHDRAW FORM -->
+  <div class="card">
 
-<div class="card step" id="stepConfirm">
-  <p id="confirmText"></p>
-  <button id="withdrawBtn" class="withdraw">Confirm Withdrawal</button>
-</div>
+    <h3>Withdrawal Method</h3>
+    <select id="method">
+      <option value="">Select method</option>
+      <option value="bank">Bank Transfer (₦)</option>
+      <option value="crypto">Crypto (BNB BEP20)</option>
+    </select>
 
-<div id="messageBox"></div>
+    <!-- BANK -->
+    <div id="bankFields" style="display:none">
+      <h3 style="margin-top:10px">Bank Details</h3>
+
+      <select id="bank">
+        <option value="">Select Bank</option>
+        <option>Opay</option>
+        <option>PalmPay</option>
+        <option>Moniepoint</option>
+        <option>GTBank</option>
+        <option>Access Bank</option>
+        <option>Zenith Bank</option>
+        <option>UBA</option>
+        <option>First Bank</option>
+        <option>FCMB</option>
+        <option>Other</option>
+      </select>
+
+      <input id="otherBank" placeholder="Other bank name" style="display:none">
+      <input id="acctName" placeholder="Account Name">
+      <input id="acctNumber" placeholder="Account Number">
+      <input id="bankAmount" type="number" placeholder="Amount (₦)">
+      <div class="small">Minimum: ₦5,000</div>
+    </div>
+
+    <!-- CRYPTO -->
+    <div id="cryptoFields" style="display:none">
+      <h3 style="margin-top:10px">Crypto Details</h3>
+
+      <input id="wallet" placeholder="BNB Smart Chain (BEP20) Address">
+      <input id="cryptoAmount" type="number" placeholder="Amount ($)">
+      <div class="small">Minimum: $20</div>
+    </div>
+
+    <!-- CONTACT -->
+    <h3 style="margin-top:10px">Contact Details</h3>
+    <input id="whatsapp" placeholder="WhatsApp Number">
+    <input id="phone" placeholder="Calling Number">
+
+    <button id="withdrawBtn" onclick="withdraw()" disabled>
+      Submit Withdrawal
+    </button>
+
+    <div id="msgBox"></div>
+  </div>
+
+</div>
 
 <script>
 const API = "https://promdashboard.onrender.com";
-const ADMIN_ID = "6940101627";
-const USER = window.Telegram?.WebApp?.initDataUnsafe?.user || null;
-const USER_ID = USER ? USER.id : null;
-const USER_NAME = USER ? USER.first_name : "Guest";
-const USER_USERNAME = USER ? USER.username || "N/A" : "N/A";
+const tg = window.Telegram.WebApp;
+tg.ready();
 
-const balanceText = document.getElementById("balanceText");
-const step1 = document.getElementById("step1");
-const stepBank = document.getElementById("stepBank");
-const stepCrypto = document.getElementById("stepCrypto");
-const stepConfirm = document.getElementById("stepConfirm");
-const messageBox = document.getElementById("messageBox");
+const user = tg.initDataUnsafe?.user;
+const telegramId = user ? String(user.id) : null;
 
-const nextBtn1 = document.getElementById("nextBtn1");
-const nextBtnBank = document.getElementById("nextBtnBank");
-const nextBtnCrypto = document.getElementById("nextBtnCrypto");
+const userInfo = document.getElementById("userInfo");
+const balanceBox = document.getElementById("balanceBox");
+const msgBox = document.getElementById("msgBox");
 const withdrawBtn = document.getElementById("withdrawBtn");
-
-const method = document.getElementById("method");
-const bankSelect = document.getElementById("bankSelect");
-const otherBankInput = document.getElementById("otherBankInput");
-const accountName = document.getElementById("accountName");
-const accountNumber = document.getElementById("accountNumber");
-const bankAmount = document.getElementById("bankAmount");
-const cryptoAddress = document.getElementById("cryptoAddress");
-const cryptoAmount = document.getElementById("cryptoAmount");
 
 let balanceNGN = 0;
 let usdRate = 0;
-let withdrawalData = {};
 
-// Show messages
-function showMessage(msg,type="success"){messageBox.innerHTML=`<div class="${type}">${msg}</div>`;}
+function msg(text, type="success") {
+  msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
+}
 
-// Toggle other bank input
-bankSelect.addEventListener("change",()=>{otherBankInput.style.display=bankSelect.value==="Other"?"block":"none";});
+userInfo.innerHTML = `
+<b>Name:</b> ${user?.first_name || "N/A"}<br>
+<b>Username:</b> ${user?.username ? "@"+user.username : "N/A"}<br>
+<b>ID:</b> ${telegramId || "N/A"}
+`;
 
-// Fetch USD rate
-async function fetchRate(){try{const r=await fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD");const d=await r.json();usdRate=d.rates.USD||0.0024}catch{usdRate=0.0024;}}
+async function loadBalance() {
+  msg("Loading balance…", "loading");
 
-// Load balance
-async function loadBalance(){
-  await fetchRate();
-  showMessage("⏳ Loading balance...","loading");
-  if(!USER_ID){balanceNGN=0;balanceText.innerText="₦0 ≈ $0.00";showMessage("❌ Cannot detect Telegram user.","error");return;}
-  try{
-    const res=await fetch(API+"/admin/get-balance",{method:"POST",headers:{"Content-Type":"application/json","x-admin-password":"secret_for_server_only"},body:JSON.stringify({telegramId:USER_ID})});
-    const data=await res.json();
-    balanceNGN=data?.ngn||0;
-    balanceText.innerText=`₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
-    showMessage("", "success");
-  }catch(err){balanceNGN=0;balanceText="₦0 ≈ $0.00";showMessage("❌ Failed to load balance","error");}
+  const r = await fetch(API + "/admin/get-balance", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ telegramId })
+  });
+
+  const d = await r.json();
+  balanceNGN = d?.ngn || 0;
+
+  const rate = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
+  const rd = await rate.json();
+  usdRate = rd?.info?.rate || 0.002;
+
+  balanceBox.innerHTML =
+    `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+
+  withdrawBtn.disabled = balanceNGN < 5000;
+  msg("");
 }
 loadBalance();
 
-// Step navigation with loading
-nextBtn1.addEventListener("click",()=>{
-  if(!method.value){showMessage("❌ Select withdrawal method","error");return;}
-  showMessage("⏳ Loading...","loading");
-  setTimeout(()=>{
-    step1.classList.remove("active");
-    if(method.value==="bank") stepBank.classList.add("active");
-    else stepCrypto.classList.add("active");
-    showMessage("");
-  },400);
-});
+method.onchange = () => {
+  bankFields.style.display = method.value==="bank" ? "block" : "none";
+  cryptoFields.style.display = method.value==="crypto" ? "block" : "none";
+};
 
-nextBtnBank.addEventListener("click",()=>{
-  let bank = bankSelect.value==="Other"?otherBankInput.value.trim():bankSelect.value;
-  const acctName=accountName.value.trim();
-  const acctNum=accountNumber.value.trim();
-  const amt=Number(bankAmount.value);
-  if(!bank||!acctName||!acctNum||!amt){showMessage("❌ Fill all bank fields","error");return;}
-  if(amt>balanceNGN){showMessage("❌ Insufficient balance","error");return;}
-  withdrawalData={method:"bank",amount:amt,details:{bank,acctName,acctNum}};
-  stepBank.classList.remove("active");
-  stepConfirm.querySelector("#confirmText").innerText=`Confirm bank withdrawal of ₦${amt.toLocaleString()}?`;
-  stepConfirm.classList.add("active");
-});
+bank.onchange = () => {
+  otherBank.style.display = bank.value==="Other" ? "block" : "none";
+};
 
-nextBtnCrypto.addEventListener("click",()=>{
-  const addr=cryptoAddress.value.trim();
-  const amtUSD=Number(cryptoAmount.value);
-  const amtNGN=amtUSD/usdRate;
-  if(!addr||!amtUSD){showMessage("❌ Fill all crypto fields","error");return;}
-  if(amtUSD<20){showMessage("❌ Minimum crypto withdrawal $20","error");return;}
-  if(amtNGN>balanceNGN){showMessage("❌ Insufficient balance","error");return;}
-  withdrawalData={method:"crypto",amount:Math.round(amtNGN),details:{address:addr,usd:amtUSD}};
-  stepCrypto.classList.remove("active");
-  stepConfirm.querySelector("#confirmText").innerText=`Confirm crypto withdrawal $${amtUSD.toFixed(2)} (₦${Math.round(amtNGN).toLocaleString()})?`;
-  stepConfirm.classList.add("active");
-});
+async function withdraw() {
+  const methodVal = method.value;
+  if (!methodVal) return msg("Select withdrawal method", "error");
 
-// Confirm withdrawal
-withdrawBtn.addEventListener("click",async()=>{
-  showMessage("⏳ Submitting withdrawal...","loading");
-  withdrawBtn.disabled=true;
-  try{
-    const res=await fetch(API+"/withdraw",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({telegramId:USER_ID,method:withdrawalData.method,amount:withdrawalData.amount,details:withdrawalData.details})});
-    const data=await res.json();
-    if(!data.success){showMessage(`❌ ${data.error||"Withdrawal failed"}`,"error");return;}
-    balanceNGN-=withdrawalData.amount;
-    balanceText.innerText=`₦${Math.round(balanceNGN).toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
-    showMessage("✅ Withdrawal request submitted! Admin approval pending.","success");
-    stepConfirm.classList.remove("active");
-  }catch(err){showMessage(`❌ Withdrawal failed: ${err.message}`,"error");}
-  finally{withdrawBtn.disabled=false;}
-});
+  let amountNGN = 0;
+
+  if (methodVal === "bank") {
+    amountNGN = Number(bankAmount.value);
+    if (amountNGN < 5000) return msg("Minimum bank withdrawal is ₦5,000", "error");
+  }
+
+  if (methodVal === "crypto") {
+    const usd = Number(cryptoAmount.value);
+    if (usd < 20) return msg("Minimum crypto withdrawal is $20", "error");
+    amountNGN = usd / usdRate;
+  }
+
+  msg("Submitting withdrawal…", "loading");
+
+  const res = await fetch(API + "/withdraw", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      telegramId,
+      method: methodVal,
+      amount: Math.round(amountNGN),
+      details: {
+        bank: bank.value==="Other" ? otherBank.value : bank.value,
+        accountName: acctName.value,
+        accountNumber: acctNumber.value,
+        wallet: wallet.value,
+        whatsapp: whatsapp.value,
+        phone: phone.value
+      }
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) return msg(data.error, "error");
+
+  msg("Withdrawal submitted successfully", "success");
+  withdrawBtn.disabled = true;
+}
 </script>
+
 </body>
 </html>
