@@ -67,7 +67,22 @@ async function sendTelegram(chatId, text) {
   }
 }
 
-// ADMIN ROUTES
+/* ------------------------- PUBLIC USER BALANCE ------------------------- */
+app.post("/get-balance", async (req, res) => {
+  try {
+    const { telegramId } = req.body;
+    if (!telegramId) return res.status(400).json({ error: "Telegram ID required" });
+
+    const { balances } = await readBalances();
+    const balance = balances[telegramId]?.ngn || 0;
+
+    res.json({ ngn: balance });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ------------------------- ADMIN ROUTES ------------------------- */
 app.post("/admin/get-balance", auth, async (req, res) => {
   try {
     const { telegramId } = req.body;
@@ -125,7 +140,7 @@ app.post("/admin/update-balance", auth, async (req, res) => {
   }
 });
 
-// USER WITHDRAWAL ROUTE
+/* ------------------------- USER WITHDRAWAL ROUTE ------------------------- */
 app.post("/withdraw", async (req, res) => {
   try {
     const { telegramId, method, amount, details } = req.body;
@@ -180,7 +195,7 @@ app.post("/withdraw", async (req, res) => {
   }
 });
 
-// Health check
+/* ------------------------- HEALTH CHECK ------------------------- */
 app.get("/test", async (req, res) => {
   try {
     const { balances } = await readBalances();
@@ -190,7 +205,7 @@ app.get("/test", async (req, res) => {
   }
 });
 
-// Start server
+/* ------------------------- START SERVER ------------------------- */
 const serverPort = PORT || 3000;
 app.listen(serverPort, () => {
   console.log(`Admin server running on port ${serverPort}`);
