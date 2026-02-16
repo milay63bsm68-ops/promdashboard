@@ -7,7 +7,6 @@
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="balance.js"></script>
-<!-- Load promolist.js as classic script -->
 <script src="https://milay63bsm68-ops.github.io/repro/promolist.js"></script>
 
 <style>
@@ -39,6 +38,7 @@ button {
 }
 .withdraw { background:#3b82f6; color:white; }
 .unlock { background:#22c55e; color:white; }
+
 .promo-link { 
   background:#1e40af; 
   color:white; 
@@ -49,12 +49,26 @@ button {
   margin-top:10px;
   cursor:pointer;
 }
+
+input {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  outline:none;
+  margin-top:10px;
+  background:#020617;
+  color:white;
+  text-align:center;
+}
+small { color:#94a3b8; }
 </style>
 </head>
 
 <body>
 
 <div class="container">
+
   <div class="card" id="user"></div>
   <div class="card" id="balance">Loading balance...</div>
   <div class="card" id="promo"></div>
@@ -63,7 +77,11 @@ button {
     <button class="withdraw" onclick="location.href='withdraw.html'">
       💸 Withdraw
     </button>
+
+    <!-- Earnings description -->
+    <div id="earnings" style="margin-top:15px;font-size:14px;"></div>
   </div>
+
 </div>
 
 <script>
@@ -75,21 +93,18 @@ const telegramId = user ? String(user.id) : null;
 const name = user?.first_name || "Guest";
 const username = user?.username ? "@" + user.username : "No username";
 
-// Display user info
 document.getElementById("user").innerHTML = `
 <b>Name:</b> ${name}<br>
 <b>Username:</b> ${username}<br>
 <b>Telegram ID:</b> ${telegramId || "N/A"}
 `;
 
-// Get balance from balance.js
 function getUserBalance() {
   if (!window.USER_BALANCES) return 0;
   if (!telegramId || !window.USER_BALANCES[telegramId]) return 0;
   return window.USER_BALANCES[telegramId].ngn || 0;
 }
 
-// Fetch real-life USD rate
 async function fetchUsdRate() {
   try {
     const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
@@ -100,7 +115,6 @@ async function fetchUsdRate() {
   }
 }
 
-// Load balance and show USD
 async function loadBalance() {
   const ngn = getUserBalance();
   const usdRate = await fetchUsdRate();
@@ -110,10 +124,17 @@ async function loadBalance() {
     <b>Balance</b><br>
     ₦${ngn.toLocaleString()} ≈ $${usd.toFixed(2)}
   `;
+
+  // Earnings table
+  document.getElementById("earnings").innerHTML = `
+    <b>💰 Promo Earnings</b><br><br>
+    7 Days Plan (₦3,500) → <b>₦1,000</b> ≈ <b>$${(1000*usdRate).toFixed(2)}</b><br>
+    14 Days Plan (₦7,000) → <b>₦2,000</b> ≈ <b>$${(2000*usdRate).toFixed(2)}</b><br>
+    Forever Plan (₦20,000) → <b>₦5,000</b> ≈ <b>$${(5000*usdRate).toFixed(2)}</b>
+  `;
 }
 loadBalance();
 
-// Check promo access and show promo link
 function checkPromo() {
   const promoContainer = document.getElementById("promo");
   if (!Array.isArray(PROMO_LIST) || !telegramId) {
@@ -122,24 +143,39 @@ function checkPromo() {
   }
 
   const hasPromo = PROMO_LIST.includes(telegramId);
+
   if (hasPromo) {
-    // Show promo link for allowed users
-    const promoLink = `https://yourwebsite.com/signup?ref=${telegramId}`;
     promoContainer.innerHTML = `
       <b>Promo Access:</b> ✅ Enabled
-      <div class="promo-link" onclick="navigator.clipboard.writeText('${promoLink}'); alert('Promo link copied!');">
-        🔗 ${promoLink}
+
+      <input id="promoCode" placeholder="Enter Telegram ID (numbers only)" oninput="this.value=this.value.replace(/\\D/g,'')">
+
+      <div class="promo-link" onclick="copyPromo()">
+        🔗 Generate Promo Link
       </div>
+
+      <small>Promo code must be a Telegram ID only</small>
     `;
   } else {
-    // Show unlock button for others
-    promoContainer.innerHTML = `<button class="unlock" onclick="location.href='unlockpromo.html'">
-         🔓 Unlock Promo Earnings
-       </button>`;
+    promoContainer.innerHTML = `
+      <button class="unlock" onclick="location.href='unlockpromo.html'">
+        🔓 Unlock Promo Earnings
+      </button>
+    `;
   }
 }
 
-// Wait until PROMO_LIST is loaded (since it's a classic script)
+function copyPromo() {
+  const code = document.getElementById("promoCode").value;
+  if (!code) {
+    alert("Please enter a Telegram ID");
+    return;
+  }
+  const link = `https://yourwebsite.com/signup?ref=${code}`;
+  navigator.clipboard.writeText(link);
+  alert("Promo link copied!");
+}
+
 function waitForPromoList() {
   if (typeof PROMO_LIST !== 'undefined') {
     checkPromo();
