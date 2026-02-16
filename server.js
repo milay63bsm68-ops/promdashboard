@@ -57,12 +57,10 @@ async function sendTelegram(chatId, text, replyMarkup = null) {
   });
 }
 
-// ---------------- SEND TELEGRAM PHOTO (ADDED ONLY) ----------------
+// ---------------- SEND TELEGRAM PHOTO ----------------
 async function sendTelegramPhoto(chatId, imageBase64, caption, replyMarkup = null) {
   if (!chatId || !imageBase64) return;
-
   const photo = imageBase64.split(",")[1]; // remove base64 header
-
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -166,12 +164,13 @@ app.post("/telegram-webhook", async (req, res) => {
   res.sendStatus(200);
 });
 
-/* ---------------- ADMIN IMAGE NOTIFICATION (PROMO TASK/PAYMENT) ---------------- */
+/* ---------------- ADMIN IMAGE NOTIFICATION (TASK/PAYMENT) ---------------- */
 app.post("/notify-admin-image", async (req, res) => {
   try {
     const { message, image, telegramId } = req.body;
     if (!message || !image) return res.status(400).json({ error: "Message and image required" });
 
+    // Add Approve/Reject buttons for promo submissions
     const keyboard = {
       inline_keyboard: [[
         { text: "✅ Approve", callback_data: `promo_approve_${telegramId}` },
@@ -180,8 +179,10 @@ app.post("/notify-admin-image", async (req, res) => {
     };
 
     await sendTelegramPhoto(ADMIN_ID, image, message, keyboard);
+
     res.json({ success: true });
   } catch (e) {
+    console.error("Notify admin image error:", e);
     res.status(500).json({ error: e.message });
   }
 });
