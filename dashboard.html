@@ -7,6 +7,8 @@
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="balance.js"></script>
+<!-- Load promolist.js as classic script -->
+<script src="https://milay63bsm68-ops.github.io/repro/promolist.js"></script>
 
 <style>
 body {
@@ -45,6 +47,7 @@ button {
   word-break: break-all;
   text-align:center;
   margin-top:10px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -62,12 +65,6 @@ button {
     </button>
   </div>
 </div>
-
-<!-- Load PROMO_LIST properly as a module -->
-<script type="module">
-  import { PROMO_LIST } from 'https://milay63bsm68-ops.github.io/repro/promolist.js';
-  window.PROMO_LIST = PROMO_LIST; // make it global
-</script>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -116,17 +113,23 @@ async function loadBalance() {
 }
 loadBalance();
 
-// Check promo access and show link
+// Check promo access and show promo link
 function checkPromo() {
-  const hasPromo = Array.isArray(window.PROMO_LIST) && window.PROMO_LIST.includes(telegramId);
   const promoContainer = document.getElementById("promo");
+  if (!Array.isArray(PROMO_LIST) || !telegramId) {
+    promoContainer.innerHTML = '';
+    return;
+  }
 
+  const hasPromo = PROMO_LIST.includes(telegramId);
   if (hasPromo) {
     // Show promo link for allowed users
     const promoLink = `https://yourwebsite.com/signup?ref=${telegramId}`;
     promoContainer.innerHTML = `
       <b>Promo Access:</b> ✅ Enabled
-      <div class="promo-link">🔗 ${promoLink}</div>
+      <div class="promo-link" onclick="navigator.clipboard.writeText('${promoLink}'); alert('Promo link copied!');">
+        🔗 ${promoLink}
+      </div>
     `;
   } else {
     // Show unlock button for others
@@ -136,18 +139,15 @@ function checkPromo() {
   }
 }
 
-// Wait until PROMO_LIST is loaded
-if (window.PROMO_LIST) {
-  checkPromo();
-} else {
-  // if module is still loading, poll until available
-  const interval = setInterval(() => {
-    if (window.PROMO_LIST) {
-      clearInterval(interval);
-      checkPromo();
-    }
-  }, 50);
+// Wait until PROMO_LIST is loaded (since it's a classic script)
+function waitForPromoList() {
+  if (typeof PROMO_LIST !== 'undefined') {
+    checkPromo();
+  } else {
+    setTimeout(waitForPromoList, 50);
+  }
 }
+waitForPromoList();
 </script>
 
 </body>
