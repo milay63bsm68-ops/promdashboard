@@ -175,6 +175,17 @@ function showMsg(text, type="success") {
   msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
 }
 
+// Fetch USD rate
+async function loadUSDRate() {
+  try {
+    const r = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
+    const d = await r.json();
+    return d?.info?.rate || 0.002;
+  } catch {
+    return 0.002;
+  }
+}
+
 // Load user balance
 async function loadBalance() {
   showMsg("Loading balance…", "loading");
@@ -187,10 +198,7 @@ async function loadBalance() {
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
 
-    // Live USD rate
-    const rate = await fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD");
-    const rd = await rate.json();
-    usdRate = rd?.rates?.USD || 0.002;
+    usdRate = await loadUSDRate();
 
     balanceBox.innerHTML =
       `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
@@ -275,7 +283,6 @@ async function withdraw() {
     withdrawBtn.disabled = false;
   }
 }
-//script end
 </script>
 
 </body>
