@@ -38,30 +38,25 @@ button {
 }
 .withdraw { background:#3b82f6; color:white; }
 .unlock { background:#22c55e; color:white; }
+.copy { background:#1e40af; color:white; }
 
-.promo-link { 
-  background:#1e40af; 
-  color:white; 
-  padding:10px; 
-  border-radius:10px; 
-  word-break: break-all;
-  text-align:center;
-  margin-top:10px;
-  cursor:pointer;
-}
-
-input {
+table {
   width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  outline:none;
+  border-collapse:collapse;
   margin-top:10px;
-  background:#020617;
-  color:white;
+  font-size:14px;
+}
+th, td {
+  border:1px solid #1e293b;
+  padding:8px;
   text-align:center;
 }
-small { color:#94a3b8; }
+th {
+  background:#020617;
+}
+small {
+  color:#94a3b8;
+}
 </style>
 </head>
 
@@ -79,7 +74,7 @@ small { color:#94a3b8; }
     </button>
 
     <!-- Earnings description -->
-    <div id="earnings" style="margin-top:15px;font-size:14px;"></div>
+    <div id="earnings" style="margin-top:18px;"></div>
   </div>
 
 </div>
@@ -118,43 +113,71 @@ async function fetchUsdRate() {
 async function loadBalance() {
   const ngn = getUserBalance();
   const usdRate = await fetchUsdRate();
-  const usd = ngn * usdRate;
 
   document.getElementById("balance").innerHTML = `
     <b>Balance</b><br>
-    ₦${ngn.toLocaleString()} ≈ $${usd.toFixed(2)}
+    ₦${ngn.toLocaleString()} ≈ $${(ngn * usdRate).toFixed(2)}
   `;
 
-  // Earnings table
   document.getElementById("earnings").innerHTML = `
-    <b>💰 Promo Earnings</b><br><br>
-    7 Days Plan (₦3,500) → <b>₦1,000</b> ≈ <b>$${(1000*usdRate).toFixed(2)}</b><br>
-    14 Days Plan (₦7,000) → <b>₦2,000</b> ≈ <b>$${(2000*usdRate).toFixed(2)}</b><br>
-    Forever Plan (₦20,000) → <b>₦5,000</b> ≈ <b>$${(5000*usdRate).toFixed(2)}</b>
+    <b>💰 How Promo Earnings Work</b><br><br>
+    When someone buys any premium plan using <b>your personal promo code</b>,
+    you instantly earn commission as shown below 👇
+    <br><br>
+
+    <table>
+      <tr>
+        <th>Premium Plan</th>
+        <th>User Pays</th>
+        <th>You Earn</th>
+      </tr>
+      <tr>
+        <td>7 Days</td>
+        <td>₦3,500</td>
+        <td>₦1,000 ≈ $${(1000 * usdRate).toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td>14 Days</td>
+        <td>₦7,000</td>
+        <td>₦2,000 ≈ $${(2000 * usdRate).toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td>Forever</td>
+        <td>₦20,000</td>
+        <td>₦5,000 ≈ $${(5000 * usdRate).toFixed(2)}</td>
+      </tr>
+    </table>
+
+    <br>
+    <small>
+      📌 Share your promo link anywhere.  
+      Every successful purchase adds earnings to your balance.
+    </small>
   `;
 }
 loadBalance();
 
 function checkPromo() {
   const promoContainer = document.getElementById("promo");
-  if (!Array.isArray(PROMO_LIST) || !telegramId) {
-    promoContainer.innerHTML = '';
-    return;
-  }
+  if (!Array.isArray(PROMO_LIST) || !telegramId) return;
 
   const hasPromo = PROMO_LIST.includes(telegramId);
 
   if (hasPromo) {
+    const promoLink = `https://yourwebsite.com/signup?ref=${telegramId}`;
+
     promoContainer.innerHTML = `
-      <b>Promo Access:</b> ✅ Enabled
+      <b>🎯 Promo Access:</b> Enabled ✅<br><br>
 
-      <input id="promoCode" placeholder="Enter Telegram ID (numbers only)" oninput="this.value=this.value.replace(/\\D/g,'')">
+      <button class="copy" onclick="copyText('${telegramId}')">
+        📋 Copy Promo Code
+      </button>
 
-      <div class="promo-link" onclick="copyPromo()">
-        🔗 Generate Promo Link
-      </div>
+      <button class="copy" onclick="copyText('${promoLink}')">
+        🔗 Copy Promo Link
+      </button>
 
-      <small>Promo code must be a Telegram ID only</small>
+      <small>Your promo code is your Telegram ID</small>
     `;
   } else {
     promoContainer.innerHTML = `
@@ -165,15 +188,9 @@ function checkPromo() {
   }
 }
 
-function copyPromo() {
-  const code = document.getElementById("promoCode").value;
-  if (!code) {
-    alert("Please enter a Telegram ID");
-    return;
-  }
-  const link = `https://yourwebsite.com/signup?ref=${code}`;
-  navigator.clipboard.writeText(link);
-  alert("Promo link copied!");
+function copyText(text) {
+  navigator.clipboard.writeText(text);
+  alert("Copied successfully!");
 }
 
 function waitForPromoList() {
