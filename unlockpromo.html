@@ -44,6 +44,11 @@ input, select {
   color:white;
 }
 .hidden { display:none; }
+.status {
+  margin-top:10px;
+  font-size:14px;
+  text-align:center;
+}
 </style>
 </head>
 
@@ -72,6 +77,7 @@ input, select {
     <input type="file" accept="image/*" id="taskShot">
 
     <button class="primary" onclick="submitTask()">Submit Task</button>
+    <div class="status" id="taskStatus"></div>
   </div>
 
   <!-- PURCHASE -->
@@ -92,6 +98,7 @@ input, select {
     <input type="file" accept="image/*" id="payShot">
 
     <button class="secondary" onclick="submitPayment()">Submit Payment</button>
+    <div class="status" id="payStatus"></div>
   </div>
 
 </div>
@@ -116,10 +123,12 @@ userInfo.innerHTML = `
 function showTask(){
   taskBox.classList.remove("hidden");
   purchaseBox.classList.add("hidden");
+  taskStatus.innerHTML = "";
 }
 function showPurchase(){
   purchaseBox.classList.remove("hidden");
   taskBox.classList.add("hidden");
+  payStatus.innerHTML = "";
 }
 
 function toBase64(file){
@@ -133,9 +142,9 @@ function toBase64(file){
 async function submitTask(){
   const img = taskShot.files[0];
   if(!img) return alert("Upload screenshot");
-
+  taskStatus.innerHTML = "⏳ Sending task to admin...";
+  
   const image = await toBase64(img);
-
   const message =
 `🟢 PROMO TASK SUBMISSION
 Name: ${name}
@@ -144,22 +153,31 @@ ID: ${telegramId}
 WhatsApp: ${taskWhatsapp.value}
 Call: ${taskCall.value}`;
 
-  await fetch(BACKEND+"/notify-admin-image",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ message, image, telegramId })
-  });
-
-  alert("✅ Task sent for review");
-  tg.close();
+  try {
+    const res = await fetch(BACKEND+"/notify-admin-image",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ message, image, telegramId })
+    });
+    const data = await res.json();
+    if(data.success){
+      taskStatus.innerHTML = "✅ Task sent for review";
+      tg.close();
+    } else {
+      taskStatus.innerHTML = "❌ Failed to send task. Try again.";
+    }
+  } catch(err){
+    taskStatus.innerHTML = "❌ Error sending task.";
+    console.error(err);
+  }
 }
 
 async function submitPayment(){
   const img = payShot.files[0];
   if(!img) return alert("Upload payment proof");
+  payStatus.innerHTML = "⏳ Sending payment proof...";
 
   const image = await toBase64(img);
-
   const message =
 `🟡 PROMO PAYMENT
 Name: ${name}
@@ -169,14 +187,23 @@ Method: ${payMethod.value}
 WhatsApp: ${payWhatsapp.value}
 Call: ${payCall.value}`;
 
-  await fetch(BACKEND+"/notify-admin-image",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ message, image, telegramId })
-  });
-
-  alert("✅ Payment sent for confirmation");
-  tg.close();
+  try {
+    const res = await fetch(BACKEND+"/notify-admin-image",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ message, image, telegramId })
+    });
+    const data = await res.json();
+    if(data.success){
+      payStatus.innerHTML = "✅ Payment sent for confirmation";
+      tg.close();
+    } else {
+      payStatus.innerHTML = "❌ Failed to send payment. Try again.";
+    }
+  } catch(err){
+    payStatus.innerHTML = "❌ Error sending payment.";
+    console.error(err);
+  }
 }
 </script>
 </body>
