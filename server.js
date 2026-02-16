@@ -18,6 +18,7 @@ const {
   GITHUB_REPO,
   BALANCE_FILE,
   TELEGRAM_BOT_TOKEN,
+  ADMIN_ID,
   PORT
 } = process.env;
 
@@ -53,7 +54,20 @@ async function readBalances() {
   }
 }
 
-// GET balance for a user
+// Send Telegram message helper
+async function sendTelegram(chatId, text) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text })
+    });
+  } catch (err) {
+    console.warn("Telegram message failed:", err.message);
+  }
+}
+
+// ADMIN ROUTES
 app.post("/admin/get-balance", auth, async (req, res) => {
   try {
     const { telegramId } = req.body;
@@ -69,7 +83,6 @@ app.post("/admin/get-balance", auth, async (req, res) => {
   }
 });
 
-// UPDATE balance (deposit or withdraw)
 app.post("/admin/update-balance", auth, async (req, res) => {
   try {
     const { telegramId, amount, type } = req.body;
@@ -81,55 +94,29 @@ app.post("/admin/update-balance", auth, async (req, res) => {
     const current = balances[telegramId]?.ngn || 0;
 
     let newBalance = type === "deposit" ? current + amount : current - amount;
-    if (newBalance < 0) {
-      return res.status(400).json({ error: "Insufficient balance" });
-    }
+    if (newBalance < 0) return res.status(400).json({ error: "Insufficient balance" });
 
     balances[telegramId] = { ngn: newBalance };
     const updatedContent = "window.USER_BALANCES = " + JSON.stringify(balances, null, 2);
 
-    // Update GitHub file
     const githubRes = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
       {
         method: "PUT",
-        headers: {
-          Authorization: `token ${GITHUB_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: "Admin balance update",
-          content: Buffer.from(updatedContent).toString("base64"),
-          sha
-        })
+        headers: { Authorization: `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Admin balance update", content: Buffer.from(updatedContent).toString("base64"), sha })
       }
     );
-
     if (!githubRes.ok) {
       const text = await githubRes.text();
       throw new Error(`GitHub update failed: ${githubRes.status} - ${text}`);
     }
 
-    // Send Telegram notification (optional failure won't break update)
-    try {
-      const telegramRes = await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: telegramId,
-            text:
-              type === "deposit"
-                ? `💰 Deposit +₦${amount}\nNew balance: ₦${newBalance}`
-                : `💸 Withdrawal -₦${amount}\nNew balance: ₦${newBalance}`
-          })
-        }
-      );
-      if (!telegramRes.ok) console.warn("Telegram notification failed");
-    } catch (err) {
-      console.warn("Telegram notification error:", err.message);
-    }
+    await sendTelegram(telegramId,
+      type === "deposit"
+        ? `💰 Deposit +₦${amount}\nNew balance: ₦${newBalance}`
+        : `💸 Withdrawal -₦${amount}\nNew balance: ₦${newBalance}`
+    );
 
     res.json({ success: true, newBalance });
   } catch (err) {
@@ -138,7 +125,62 @@ app.post("/admin/update-balance", auth, async (req, res) => {
   }
 });
 
-// Health check / test route
+// USER WITHDRAWAL ROUTE
+app.post("/withdraw", async (req, res) => {
+  try {
+    const { telegramId, method, amount, details } = req.body;
+    if (!telegramId || !method || !amount || !details) {
+      return res.status(400).json({ error: "Missing parameters" });
+    }
+
+    const { balances, sha } = await readBalances();
+    const current = balances[telegramId]?.ngn || 0;
+
+    // Use a simple API for live USD rate
+    const rateRes = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
+    const rateData = await rateRes.json();
+    const usdRate = rateData?.info?.rate || 0.002; // fallback
+
+    // Minimum withdrawal checks
+    if (method === "bank" && amount < 5000) {
+      return res.status(400).json({ error: "Minimum bank withdrawal is ₦5000" });
+    }
+    if (method === "crypto" && amount * usdRate < 20) {
+      return res.status(400).json({ error: "Minimum crypto withdrawal is $20" });
+    }
+    if (amount > current) return res.status(400).json({ error: "Insufficient balance" });
+
+    // Deduct balance immediately
+    balances[telegramId] = { ngn: current - amount };
+    const updatedContent = "window.USER_BALANCES = " + JSON.stringify(balances, null, 2);
+
+    // Update GitHub
+    const githubRes = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
+      {
+        method: "PUT",
+        headers: { Authorization: `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "User withdrawal", content: Buffer.from(updatedContent).toString("base64"), sha })
+      }
+    );
+    if (!githubRes.ok) throw new Error("Failed to update GitHub balances");
+
+    // Notify admin
+    const adminText = `📢 Pending Withdrawal\nUser: ${telegramId}\nMethod: ${method}\nAmount: ₦${amount}\nDetails: ${JSON.stringify(details)}`;
+    await sendTelegram(ADMIN_ID, adminText);
+
+    // Notify user
+    await sendTelegram(telegramId, `✅ Withdrawal request submitted!\nAmount: ₦${amount}\nPending admin approval.`);
+
+    res.json({ success: true, newBalance: balances[telegramId].ngn });
+
+  } catch (err) {
+    console.error("Withdrawal error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Health check
 app.get("/test", async (req, res) => {
   try {
     const { balances } = await readBalances();
@@ -148,7 +190,7 @@ app.get("/test", async (req, res) => {
   }
 });
 
-// Start server on Render port or default 3000
+// Start server
 const serverPort = PORT || 3000;
 app.listen(serverPort, () => {
   console.log(`Admin server running on port ${serverPort}`);
