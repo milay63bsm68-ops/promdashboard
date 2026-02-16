@@ -1,145 +1,183 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<title>Unlock Promo</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<!-- Telegram WebApp -->
+<meta charset="UTF-8">
+<title>Unlock Promo Earnings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-  body {
-    margin: 0;
-    padding: 0;
-    background: #0f1723;
-    font-family: Arial, sans-serif;
-    color: #fff;
-  }
-
-  .container {
-    max-width: 420px;
-    margin: 40px auto;
-    background: #121c2d;
-    border-radius: 14px;
-    padding: 20px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.4);
-  }
-
-  h2 {
-    text-align: center;
-    margin-bottom: 15px;
-  }
-
-  .info {
-    background: #0b1320;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    font-size: 14px;
-  }
-
-  button {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 12px;
-  }
-
-  button:disabled {
-    background: #334155;
-    cursor: not-allowed;
-  }
-
-  .status {
-    margin-top: 15px;
-    text-align: center;
-    font-size: 14px;
-  }
+body {
+  background:#020617;
+  color:white;
+  font-family:Arial, sans-serif;
+  padding:20px;
+}
+.container {
+  max-width:480px;
+  margin:auto;
+}
+.card {
+  background:#0f172a;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:15px;
+}
+button {
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  margin-top:10px;
+  cursor:pointer;
+}
+.primary { background:#22c55e; color:white; }
+.secondary { background:#3b82f6; color:white; }
+input, select {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  margin-top:10px;
+  background:#020617;
+  color:white;
+}
+.hidden { display:none; }
 </style>
 </head>
 
 <body>
 <div class="container">
-  <h2>🔓 Unlock Promo</h2>
 
-  <div class="info" id="userInfo">
-    Loading your account...
+  <div class="card" id="userInfo"></div>
+
+  <div class="card">
+    <b>🔓 Unlock Promo Earnings</b><br><br>
+    Choose how you want to unlock 👇
   </div>
 
-  <button id="unlockBtn">Request Unlock</button>
+  <div class="card">
+    <button class="primary" onclick="showTask()">✅ Complete Simple Task</button>
+    <button class="secondary" onclick="showPurchase()">💳 Purchase Access</button>
+  </div>
 
-  <div class="status" id="status"></div>
+  <!-- TASK -->
+  <div class="card hidden" id="taskBox">
+    <b>📌 Task</b><br><br>
+    Join WhatsApp group & invite <b>10 people</b>
+
+    <input id="taskWhatsapp" placeholder="WhatsApp number">
+    <input id="taskCall" placeholder="Calling number">
+    <input type="file" accept="image/*" id="taskShot">
+
+    <button class="primary" onclick="submitTask()">Submit Task</button>
+  </div>
+
+  <!-- PURCHASE -->
+  <div class="card hidden" id="purchaseBox">
+    <b>🏦 Bank:</b> 9114301708 (Opay)<br>
+    <b>💰 BNB (BEP20):</b><br>
+    <small>0xbBcc409872bC2441400735624638F3D67DAa7C4C</small>
+
+    <input id="payWhatsapp" placeholder="WhatsApp number">
+    <input id="payCall" placeholder="Calling number">
+
+    <select id="payMethod">
+      <option value="">Select method</option>
+      <option>Bank Transfer</option>
+      <option>BNB (BEP20)</option>
+    </select>
+
+    <input type="file" accept="image/*" id="payShot">
+
+    <button class="secondary" onclick="submitPayment()">Submit Payment</button>
+  </div>
+
 </div>
 
 <script>
-const tg = window.Telegram.WebApp;
+const tg = Telegram.WebApp;
 tg.ready();
 
-const BACKEND_URL = "https://promdashboard.onrender.com";
+const BACKEND = "https://promdashboard.onrender.com";
+const user = tg.initDataUnsafe.user;
 
-const telegramId = tg.initDataUnsafe?.user?.id;
-const username = tg.initDataUnsafe?.user?.username || "No username";
+const telegramId = user.id;
+const name = user.first_name;
+const username = user.username ? "@"+user.username : "No username";
 
-const infoBox = document.getElementById("userInfo");
-const unlockBtn = document.getElementById("unlockBtn");
-const statusBox = document.getElementById("status");
+userInfo.innerHTML = `
+<b>Name:</b> ${name}<br>
+<b>Username:</b> ${username}<br>
+<b>ID:</b> ${telegramId}
+`;
 
-if (!telegramId) {
-  infoBox.innerHTML = "❌ Telegram user not detected.";
-  unlockBtn.disabled = true;
-} else {
-  loadBalance();
+function showTask(){
+  taskBox.classList.remove("hidden");
+  purchaseBox.classList.add("hidden");
+}
+function showPurchase(){
+  purchaseBox.classList.remove("hidden");
+  taskBox.classList.add("hidden");
 }
 
-async function loadBalance() {
-  try {
-    const res = await fetch(BACKEND_URL + "/get-balance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telegramId })
-    });
-
-    const data = await res.json();
-
-    infoBox.innerHTML = `
-      <b>User ID:</b> ${telegramId}<br>
-      <b>Username:</b> @${username}<br>
-      <b>Balance:</b> ₦${data.ngn} (~$${data.usd})
-    `;
-  } catch {
-    infoBox.innerHTML = "⚠️ Failed to load balance.";
-  }
+function toBase64(file){
+  return new Promise(r=>{
+    const fr = new FileReader();
+    fr.onload = ()=>r(fr.result);
+    fr.readAsDataURL(file);
+  });
 }
 
-unlockBtn.onclick = async () => {
-  unlockBtn.disabled = true;
-  statusBox.innerHTML = "⏳ Sending request to admin...";
+async function submitTask(){
+  const img = taskShot.files[0];
+  if(!img) return alert("Upload screenshot");
+
+  const image = await toBase64(img);
 
   const message =
-`🔓 PROMO UNLOCK REQUEST
-User ID: ${telegramId}
-Username: @${username}
-Action: Unlock promo access`;
+`🟢 PROMO TASK SUBMISSION
+Name: ${name}
+Username: ${username}
+ID: ${telegramId}
+WhatsApp: ${taskWhatsapp.value}
+Call: ${taskCall.value}`;
 
-  try {
-    await fetch(BACKEND_URL + "/notify-admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
-    });
+  await fetch(BACKEND+"/notify-admin-image",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ message, image, telegramId })
+  });
 
-    statusBox.innerHTML = "✅ Request sent. Awaiting admin approval.";
-  } catch {
-    statusBox.innerHTML = "❌ Failed to send request.";
-    unlockBtn.disabled = false;
-  }
-};
+  alert("✅ Task sent for review");
+  tg.close();
+}
+
+async function submitPayment(){
+  const img = payShot.files[0];
+  if(!img) return alert("Upload payment proof");
+
+  const image = await toBase64(img);
+
+  const message =
+`🟡 PROMO PAYMENT
+Name: ${name}
+Username: ${username}
+ID: ${telegramId}
+Method: ${payMethod.value}
+WhatsApp: ${payWhatsapp.value}
+Call: ${payCall.value}`;
+
+  await fetch(BACKEND+"/notify-admin-image",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ message, image, telegramId })
+  });
+
+  alert("✅ Payment sent for confirmation");
+  tg.close();
+}
 </script>
 </body>
 </html>
