@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Unlock Promo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<!-- Telegram WebApp -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #0f1723;
+    font-family: Arial, sans-serif;
+    color: #fff;
+  }
+
+  .container {
+    max-width: 420px;
+    margin: 40px auto;
+    background: #121c2d;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .info {
+    background: #0b1320;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-size: 14px;
+  }
+
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+
+  button:disabled {
+    background: #334155;
+    cursor: not-allowed;
+  }
+
+  .status {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 14px;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h2>🔓 Unlock Promo</h2>
+
+  <div class="info" id="userInfo">
+    Loading your account...
+  </div>
+
+  <button id="unlockBtn">Request Unlock</button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+
+const BACKEND_URL = "https://promdashboard.onrender.com";
+
+const telegramId = tg.initDataUnsafe?.user?.id;
+const username = tg.initDataUnsafe?.user?.username || "No username";
+
+const infoBox = document.getElementById("userInfo");
+const unlockBtn = document.getElementById("unlockBtn");
+const statusBox = document.getElementById("status");
+
+if (!telegramId) {
+  infoBox.innerHTML = "❌ Telegram user not detected.";
+  unlockBtn.disabled = true;
+} else {
+  loadBalance();
+}
+
+async function loadBalance() {
+  try {
+    const res = await fetch(BACKEND_URL + "/get-balance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegramId })
+    });
+
+    const data = await res.json();
+
+    infoBox.innerHTML = `
+      <b>User ID:</b> ${telegramId}<br>
+      <b>Username:</b> @${username}<br>
+      <b>Balance:</b> ₦${data.ngn} (~$${data.usd})
+    `;
+  } catch {
+    infoBox.innerHTML = "⚠️ Failed to load balance.";
+  }
+}
+
+unlockBtn.onclick = async () => {
+  unlockBtn.disabled = true;
+  statusBox.innerHTML = "⏳ Sending request to admin...";
+
+  const message =
+`🔓 PROMO UNLOCK REQUEST
+User ID: ${telegramId}
+Username: @${username}
+Action: Unlock promo access`;
+
+  try {
+    await fetch(BACKEND_URL + "/notify-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
+
+    statusBox.innerHTML = "✅ Request sent. Awaiting admin approval.";
+  } catch {
+    statusBox.innerHTML = "❌ Failed to send request.";
+    unlockBtn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
