@@ -43,19 +43,19 @@ input, select {
   background:#020617;
   color:white;
 }
-.hidden { display:none; }
 .status {
   margin-top:10px;
   font-size:14px;
   text-align:center;
 }
+.hidden { display:none; }
 </style>
 </head>
 
 <body>
 <div class="container">
 
-  <div class="card" id="userInfo"></div>
+  <div class="card" id="userInfo">Loading user info...</div>
 
   <div class="card">
     <b>🔓 Unlock Promo Earnings</b><br><br>
@@ -71,11 +71,9 @@ input, select {
   <div class="card hidden" id="taskBox">
     <b>📌 Task</b><br><br>
     Join WhatsApp group & invite <b>10 people</b>
-
     <input id="taskWhatsapp" placeholder="WhatsApp number">
     <input id="taskCall" placeholder="Calling number">
-    <input type="file" accept="image/*" id="taskShot">
-
+    <input type="file" accept="image/*" id="taskShot" multiple>
     <button class="primary" onclick="submitTask()">Submit Task</button>
     <div class="status" id="taskStatus"></div>
   </div>
@@ -85,18 +83,14 @@ input, select {
     <b>🏦 Bank:</b> 9114301708 (Opay)<br>
     <b>💰 BNB (BEP20):</b><br>
     <small>0xbBcc409872bC2441400735624638F3D67DAa7C4C</small>
-
     <input id="payWhatsapp" placeholder="WhatsApp number">
     <input id="payCall" placeholder="Calling number">
-
     <select id="payMethod">
       <option value="">Select method</option>
       <option>Bank Transfer</option>
       <option>BNB (BEP20)</option>
     </select>
-
     <input type="file" accept="image/*" id="payShot">
-
     <button class="secondary" onclick="submitPayment()">Submit Payment</button>
     <div class="status" id="payStatus"></div>
   </div>
@@ -108,11 +102,17 @@ const tg = Telegram.WebApp;
 tg.ready();
 
 const BACKEND = "https://promdashboard.onrender.com";
-const user = tg.initDataUnsafe.user;
+const user = tg.initDataUnsafe?.user || {};
 
 const telegramId = user.id;
-const name = user.first_name;
+const name = user.first_name || "Guest";
 const username = user.username ? "@"+user.username : "No username";
+
+const userInfo = document.getElementById("userInfo");
+const taskBox = document.getElementById("taskBox");
+const purchaseBox = document.getElementById("purchaseBox");
+const taskStatus = document.getElementById("taskStatus");
+const payStatus = document.getElementById("payStatus");
 
 userInfo.innerHTML = `
 <b>Name:</b> ${name}<br>
@@ -132,53 +132,54 @@ function showPurchase(){
 }
 
 function toBase64(file){
-  return new Promise(r=>{
+  return new Promise(resolve=>{
     const fr = new FileReader();
-    fr.onload = ()=>r(fr.result);
+    fr.onload = ()=>resolve(fr.result);
     fr.readAsDataURL(file);
   });
 }
 
 async function submitTask(){
-  const img = taskShot.files[0];
-  if(!img) return alert("Upload screenshot");
-  taskStatus.innerHTML = "⏳ Sending task to admin...";
-  
-  const image = await toBase64(img);
-  const message =
+  const files = document.getElementById("taskShot").files;
+  if(!files.length){
+    taskStatus.innerHTML = "❌ Upload at least one screenshot";
+    return;
+  }
+  taskStatus.innerHTML = "⏳ Sending task...";
+  try{
+    for(let f of files){
+      const image = await toBase64(f);
+      const message =
 `🟢 PROMO TASK SUBMISSION
 Name: ${name}
 Username: ${username}
 ID: ${telegramId}
 WhatsApp: ${taskWhatsapp.value}
 Call: ${taskCall.value}`;
-
-  try {
-    const res = await fetch(BACKEND+"/notify-admin-image",{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ message, image, telegramId })
-    });
-    const data = await res.json();
-    if(data.success){
-      taskStatus.innerHTML = "✅ Task sent for review";
-      tg.close();
-    } else {
-      taskStatus.innerHTML = "❌ Failed to send task. Try again.";
+      await fetch(BACKEND+"/notify-admin-image", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ message, image, telegramId })
+      });
     }
-  } catch(err){
-    taskStatus.innerHTML = "❌ Error sending task.";
+    taskStatus.innerHTML = "✅ Task sent for review";
+    tg.close();
+  }catch(err){
+    taskStatus.innerHTML = "❌ Error sending task";
     console.error(err);
   }
 }
 
 async function submitPayment(){
-  const img = payShot.files[0];
-  if(!img) return alert("Upload payment proof");
-  payStatus.innerHTML = "⏳ Sending payment proof...";
-
-  const image = await toBase64(img);
-  const message =
+  const file = document.getElementById("payShot").files[0];
+  if(!file){
+    payStatus.innerHTML = "❌ Upload payment proof";
+    return;
+  }
+  payStatus.innerHTML = "⏳ Sending payment...";
+  try{
+    const image = await toBase64(file);
+    const message =
 `🟡 PROMO PAYMENT
 Name: ${name}
 Username: ${username}
@@ -186,22 +187,15 @@ ID: ${telegramId}
 Method: ${payMethod.value}
 WhatsApp: ${payWhatsapp.value}
 Call: ${payCall.value}`;
-
-  try {
-    const res = await fetch(BACKEND+"/notify-admin-image",{
+    await fetch(BACKEND+"/notify-admin-image", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ message, image, telegramId })
     });
-    const data = await res.json();
-    if(data.success){
-      payStatus.innerHTML = "✅ Payment sent for confirmation";
-      tg.close();
-    } else {
-      payStatus.innerHTML = "❌ Failed to send payment. Try again.";
-    }
-  } catch(err){
-    payStatus.innerHTML = "❌ Error sending payment.";
+    payStatus.innerHTML = "✅ Payment sent for confirmation";
+    tg.close();
+  }catch(err){
+    payStatus.innerHTML = "❌ Error sending payment";
     console.error(err);
   }
 }
