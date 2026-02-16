@@ -5,7 +5,7 @@ import cors from "cors";
 const app = express();
 app.use(express.json());
 
-// Allow cross-origin requests
+// Allow cross-origin requests from anywhere
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST"],
@@ -21,7 +21,7 @@ const {
   PORT
 } = process.env;
 
-// Admin auth middleware
+// Middleware to check admin password
 function auth(req, res, next) {
   if (req.headers["x-admin-password"] !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: "Unauthorized: Wrong admin password" });
@@ -29,21 +29,23 @@ function auth(req, res, next) {
   next();
 }
 
-// Read balances from GitHub
+// Read balances safely from GitHub
 async function readBalances() {
   try {
     const r = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
-    if (!r.ok) throw new Error(`GitHub API error: ${r.status}`);
+
+    if (!r.ok) {
+      const text = await r.text();
+      throw new Error(`GitHub API error: ${r.status} - ${text}`);
+    }
 
     const f = await r.json();
-    const balances = eval(
-      Buffer.from(f.content, "base64")
-        .toString()
-        .replace("window.USER_BALANCES =", "")
-    );
+    const content = Buffer.from(f.content, "base64").toString();
+    const jsonString = content.replace("window.USER_BALANCES =", "").trim();
+    const balances = JSON.parse(jsonString);
 
     return { balances, sha: f.sha };
   } catch (err) {
@@ -51,7 +53,7 @@ async function readBalances() {
   }
 }
 
-// GET BALANCE
+// GET balance for a user
 app.post("/admin/get-balance", auth, async (req, res) => {
   try {
     const { telegramId } = req.body;
@@ -62,11 +64,12 @@ app.post("/admin/get-balance", auth, async (req, res) => {
 
     res.json({ ngn: balance });
   } catch (err) {
+    console.error("GET balance error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// UPDATE BALANCE
+// UPDATE balance (deposit or withdraw)
 app.post("/admin/update-balance", auth, async (req, res) => {
   try {
     const { telegramId, amount, type } = req.body;
@@ -87,7 +90,7 @@ app.post("/admin/update-balance", auth, async (req, res) => {
 
     // Update GitHub file
     const githubRes = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/${BALANCE_FILE}`,
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
       {
         method: "PUT",
         headers: {
@@ -102,33 +105,50 @@ app.post("/admin/update-balance", auth, async (req, res) => {
       }
     );
 
-    if (!githubRes.ok) throw new Error(`GitHub update failed: ${githubRes.status}`);
+    if (!githubRes.ok) {
+      const text = await githubRes.text();
+      throw new Error(`GitHub update failed: ${githubRes.status} - ${text}`);
+    }
 
-    // Send Telegram notification
-    const telegramRes = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: telegramId,
-          text:
-            type === "deposit"
-              ? `💰 Deposit +₦${amount}\nNew balance: ₦${newBalance}`
-              : `💸 Withdrawal -₦${amount}\nNew balance: ₦${newBalance}`
-        })
-      }
-    );
-
-    if (!telegramRes.ok) console.warn("Telegram notification failed");
+    // Send Telegram notification (optional failure won't break update)
+    try {
+      const telegramRes = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: telegramId,
+            text:
+              type === "deposit"
+                ? `💰 Deposit +₦${amount}\nNew balance: ₦${newBalance}`
+                : `💸 Withdrawal -₦${amount}\nNew balance: ₦${newBalance}`
+          })
+        }
+      );
+      if (!telegramRes.ok) console.warn("Telegram notification failed");
+    } catch (err) {
+      console.warn("Telegram notification error:", err.message);
+    }
 
     res.json({ success: true, newBalance });
+  } catch (err) {
+    console.error("UPDATE balance error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Health check / test route
+app.get("/test", async (req, res) => {
+  try {
+    const { balances } = await readBalances();
+    res.json({ ok: true, firstUser: Object.keys(balances)[0] || null });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Use Render port or default 3000
+// Start server on Render port or default 3000
 const serverPort = PORT || 3000;
 app.listen(serverPort, () => {
   console.log(`Admin server running on port ${serverPort}`);
