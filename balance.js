@@ -9,6 +9,6 @@ window.USER_BALANCES = {
     "ngn": 5000
   },
   "6976365864": {
-    "ngn": 30000
+    "ngn": 25000
   }
 }
