@@ -18,6 +18,7 @@ body {
   border-radius:14px;
   max-width:420px;
   margin:auto;
+  position: relative;
 }
 input {
   width:100%;
@@ -25,6 +26,17 @@ input {
   margin-top:10px;
   border-radius:10px;
   border:none;
+}
+.password-container {
+  position: relative;
+}
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 18px;
 }
 button {
   width:100%;
@@ -35,6 +47,7 @@ button {
   font-weight:bold;
   cursor:pointer;
   opacity:0.5;
+  transition: 0.2s;
 }
 button.enabled {
   opacity:1;
@@ -46,6 +59,15 @@ button.enabled {
   margin-top:15px;
   font-size:18px;
 }
+.message {
+  margin-top:10px;
+  font-size:16px;
+  padding:8px;
+  border-radius:8px;
+}
+.success { background: #22c55e; color: #fff; }
+.error { background: #ef4444; color: #fff; }
+.loading { background: #facc15; color: #000; font-weight:bold; }
 </style>
 </head>
 
@@ -55,29 +77,51 @@ button.enabled {
   <h2>Admin Balance Control</h2>
 
   <input id="telegramId" placeholder="Telegram User ID">
-  <input id="password" placeholder="Admin Password" type="password">
+
+  <!-- Password with Eye Icon -->
+  <div class="password-container">
+    <input id="password" placeholder="Admin Password" type="password">
+    <span id="togglePassword" class="eye-icon">👁️</span>
+  </div>
 
   <button class="load" onclick="loadBalance()">Load Balance</button>
 
   <div class="balance" id="balanceText"></div>
+  <div id="messageBox"></div>
 
-  <button id="depositBtn" class="deposit" onclick="action('deposit')">
+  <button id="depositBtn" class="deposit" onclick="handleAction('deposit')">
     ➕ Deposit
   </button>
 
-  <button id="withdrawBtn" class="withdraw" onclick="action('withdraw')">
+  <button id="withdrawBtn" class="withdraw" onclick="handleAction('withdraw')">
     ➖ Withdraw
   </button>
 </div>
 
 <script>
-const API = "https://YOUR-RENDER-URL";
+const API = "https://promdashboard.onrender.com";
 
 const depositBtn = document.getElementById("depositBtn");
 const withdrawBtn = document.getElementById("withdrawBtn");
+const messageBox = document.getElementById("messageBox");
+const balanceText = document.getElementById("balanceText");
+const passwordInput = document.getElementById("password");
+const togglePassword = document.getElementById("togglePassword");
+const telegramId = document.getElementById("telegramId");
 
 depositBtn.disabled = true;
 withdrawBtn.disabled = true;
+
+// Toggle password visibility
+togglePassword.addEventListener("click", () => {
+  if (passwordInput.type === "password") {
+    passwordInput.type = "text";
+    togglePassword.textContent = "🙈"; // closed eye
+  } else {
+    passwordInput.type = "password";
+    togglePassword.textContent = "👁️"; // open eye
+  }
+});
 
 function enableButtons() {
   depositBtn.disabled = false;
@@ -86,56 +130,95 @@ function enableButtons() {
   withdrawBtn.classList.add("enabled");
 }
 
-async function loadBalance() {
-  const res = await fetch(API + "/admin/get-balance", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-password": password.value
-    },
-    body: JSON.stringify({
-      telegramId: telegramId.value
-    })
-  });
-
-  const data = await res.json();
-  if (data.error) return alert(data.error);
-
-  document.getElementById("balanceText").innerText =
-    `Current Balance: ₦${data.ngn.toLocaleString()}`;
-
-  enableButtons();
+function disableButtons() {
+  depositBtn.disabled = true;
+  withdrawBtn.disabled = true;
+  depositBtn.classList.remove("enabled");
+  withdrawBtn.classList.remove("enabled");
 }
 
-async function action(type) {
+function showMessage(msg, type="success") {
+  messageBox.innerHTML = `<div class="message ${type}">${msg}</div>`;
+}
+
+function showLoading(msg="Loading...") {
+  messageBox.innerHTML = `<div class="message loading">${msg}</div>`;
+}
+
+async function loadBalance() {
+  if (!telegramId.value) {
+    showMessage("❌ Please enter a Telegram ID", "error");
+    return;
+  }
+
+  showLoading("Fetching balance...");
+  disableButtons();
+
+  try {
+    const res = await fetch(API + "/admin/get-balance", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-password": passwordInput.value
+      },
+      body: JSON.stringify({ telegramId: telegramId.value })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Server error: ${res.status}`);
+    if (data.error) throw new Error(data.error);
+
+    balanceText.innerText = `Current Balance: ₦${data.ngn.toLocaleString()}`;
+    showMessage("✅ Balance loaded successfully", "success");
+    enableButtons();
+
+  } catch (err) {
+    balanceText.innerText = "";
+    disableButtons();
+    showMessage(`❌ Failed to load balance: ${err.message}`, "error");
+  }
+}
+
+async function handleAction(type) {
   const amount = prompt(
-    type === "deposit"
-      ? "Enter deposit amount (NGN)"
+    type === "deposit" 
+      ? "Enter deposit amount (NGN)" 
       : "Enter withdrawal amount (NGN)"
   );
 
   if (!amount || isNaN(amount) || Number(amount) <= 0) {
-    return alert("Invalid amount");
+    showMessage("❌ Invalid amount entered", "error");
+    return;
   }
 
-  const res = await fetch(API + "/admin/update-balance", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-password": password.value
-    },
-    body: JSON.stringify({
-      telegramId: telegramId.value,
-      amount: Number(amount),
-      type
-    })
-  });
+  showLoading(`${type === "deposit" ? "Depositing" : "Withdrawing"} ₦${Number(amount).toLocaleString()}...`);
+  disableButtons();
 
-  const data = await res.json();
-  if (data.error) return alert(data.error);
+  try {
+    const res = await fetch(API + "/admin/update-balance", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-password": passwordInput.value
+      },
+      body: JSON.stringify({
+        telegramId: telegramId.value,
+        amount: Number(amount),
+        type
+      })
+    });
 
-  document.getElementById("balanceText").innerText =
-    `Current Balance: ₦${data.newBalance.toLocaleString()}`;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Server error: ${res.status}`);
+    if (data.error) throw new Error(data.error);
+
+    balanceText.innerText = `Current Balance: ₦${data.newBalance.toLocaleString()}`;
+    showMessage(`✅ ${type === "deposit" ? "Deposit" : "Withdrawal"} successful!`, "success");
+    enableButtons();
+
+  } catch (err) {
+    showMessage(`❌ Failed to ${type}: ${err.message}`, "error");
+  }
 }
 </script>
 
