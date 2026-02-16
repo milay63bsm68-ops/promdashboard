@@ -37,6 +37,15 @@ button {
 }
 .withdraw { background:#3b82f6; color:white; }
 .unlock { background:#22c55e; color:white; }
+.promo-link { 
+  background:#1e40af; 
+  color:white; 
+  padding:10px; 
+  border-radius:10px; 
+  word-break: break-all;
+  text-align:center;
+  margin-top:10px;
+}
 </style>
 </head>
 
@@ -57,7 +66,7 @@ button {
 <!-- Load PROMO_LIST properly as a module -->
 <script type="module">
   import { PROMO_LIST } from 'https://milay63bsm68-ops.github.io/repro/promolist.js';
-  window.PROMO_LIST = PROMO_LIST; // make it global so old code can use it
+  window.PROMO_LIST = PROMO_LIST; // make it global
 </script>
 
 <script>
@@ -107,14 +116,24 @@ async function loadBalance() {
 }
 loadBalance();
 
-// Check promo access
+// Check promo access and show link
 function checkPromo() {
   const hasPromo = Array.isArray(window.PROMO_LIST) && window.PROMO_LIST.includes(telegramId);
-  document.getElementById("promo").innerHTML = hasPromo
-    ? `<b>Promo Access:</b> ✅ Enabled`
-    : `<button class="unlock" onclick="location.href='unlockpromo.html'">
+  const promoContainer = document.getElementById("promo");
+
+  if (hasPromo) {
+    // Show promo link for allowed users
+    const promoLink = `https://yourwebsite.com/signup?ref=${telegramId}`;
+    promoContainer.innerHTML = `
+      <b>Promo Access:</b> ✅ Enabled
+      <div class="promo-link">🔗 ${promoLink}</div>
+    `;
+  } else {
+    // Show unlock button for others
+    promoContainer.innerHTML = `<button class="unlock" onclick="location.href='unlockpromo.html'">
          🔓 Unlock Promo Earnings
        </button>`;
+  }
 }
 
 // Wait until PROMO_LIST is loaded
