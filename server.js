@@ -5,7 +5,7 @@ import cors from "cors";
 const app = express();
 app.use(express.json());
 
-// Allow cross-origin requests from anywhere
+// Allow cross-origin requests
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST"],
@@ -22,7 +22,7 @@ const {
   PORT
 } = process.env;
 
-// Middleware to check admin password
+// Admin auth middleware
 function auth(req, res, next) {
   if (req.headers["x-admin-password"] !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: "Unauthorized: Wrong admin password" });
@@ -30,7 +30,7 @@ function auth(req, res, next) {
   next();
 }
 
-// Read balances safely from GitHub
+// Read balances from GitHub
 async function readBalances() {
   try {
     const r = await fetch(
@@ -54,20 +54,35 @@ async function readBalances() {
   }
 }
 
-// Send Telegram message helper
+// Send Telegram message
 async function sendTelegram(chatId, text) {
+  if (!chatId) return console.warn("No chatId provided");
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text })
+      body: JSON.stringify({ chat_id: Number(chatId), text }) // ensure numeric
     });
+    const data = await res.json();
+    if (!data.ok) console.warn("Telegram error:", data);
   } catch (err) {
     console.warn("Telegram message failed:", err.message);
   }
 }
 
-/* ------------------------- PUBLIC USER BALANCE ------------------------- */
+// Get live USD rate
+async function getUSDRate() {
+  try {
+    const res = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
+    const data = await res.json();
+    if (data?.info?.rate) return data.info.rate;
+    return 0.002; // fallback
+  } catch {
+    return 0.002;
+  }
+}
+
+/* ---------------- PUBLIC USER BALANCE ---------------- */
 app.post("/get-balance", async (req, res) => {
   try {
     const { telegramId } = req.body;
@@ -82,7 +97,7 @@ app.post("/get-balance", async (req, res) => {
   }
 });
 
-/* ------------------------- ADMIN ROUTES ------------------------- */
+/* ---------------- ADMIN ROUTES ---------------- */
 app.post("/admin/get-balance", auth, async (req, res) => {
   try {
     const { telegramId } = req.body;
@@ -140,7 +155,7 @@ app.post("/admin/update-balance", auth, async (req, res) => {
   }
 });
 
-/* ------------------------- USER WITHDRAWAL ROUTE ------------------------- */
+/* ---------------- USER WITHDRAWAL ---------------- */
 app.post("/withdraw", async (req, res) => {
   try {
     const { telegramId, method, amount, details } = req.body;
@@ -151,10 +166,7 @@ app.post("/withdraw", async (req, res) => {
     const { balances, sha } = await readBalances();
     const current = balances[telegramId]?.ngn || 0;
 
-    // Use a simple API for live USD rate
-    const rateRes = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
-    const rateData = await rateRes.json();
-    const usdRate = rateData?.info?.rate || 0.002; // fallback
+    const usdRate = await getUSDRate();
 
     // Minimum withdrawal checks
     if (method === "bank" && amount < 5000) {
@@ -195,7 +207,7 @@ app.post("/withdraw", async (req, res) => {
   }
 });
 
-/* ------------------------- HEALTH CHECK ------------------------- */
+/* ---------------- HEALTH CHECK ---------------- */
 app.get("/test", async (req, res) => {
   try {
     const { balances } = await readBalances();
@@ -205,7 +217,7 @@ app.get("/test", async (req, res) => {
   }
 });
 
-/* ------------------------- START SERVER ------------------------- */
+/* ---------------- START SERVER ---------------- */
 const serverPort = PORT || 3000;
 app.listen(serverPort, () => {
   console.log(`Admin server running on port ${serverPort}`);
