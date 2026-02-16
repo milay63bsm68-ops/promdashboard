@@ -15,6 +15,11 @@ body {
   color:white;
   font-family:Arial, sans-serif;
   padding:20px;
+  margin:0;
+}
+.container {
+  max-width:480px;
+  margin:30px auto 0 auto; /* push content slightly down */
 }
 .card {
   background:#0f172a;
@@ -31,57 +36,69 @@ button {
   cursor:pointer;
   margin-top:10px;
 }
-.withdraw {
-  background:#3b82f6;
-}
-.unlock {
-  background:#22c55e;
-}
+.withdraw { background:#3b82f6; color:white; }
+.unlock { background:#22c55e; color:white; }
 </style>
 </head>
 
 <body>
 
-<div class="card" id="user"></div>
-<div class="card" id="balance"></div>
-<div class="card" id="promo"></div>
+<div class="container">
+  <div class="card" id="user"></div>
+  <div class="card" id="balance"></div>
+  <div class="card" id="promo"></div>
 
-<div class="card">
-  <button class="withdraw" onclick="location.href='withdraw.html'">
-    💸 Withdraw
-  </button>
+  <div class="card">
+    <button class="withdraw" onclick="location.href='withdraw.html'">
+      💸 Withdraw
+    </button>
+  </div>
 </div>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready();
 
-const user = tg.initDataUnsafe.user;
-const telegramId = String(user.id);
-const name = user.first_name || "Unknown";
-const username = user.username ? "@" + user.username : "No username";
+const user = tg.initDataUnsafe?.user;
+const telegramId = user ? String(user.id) : null;
+const name = user?.first_name || "Guest";
+const username = user?.username ? "@" + user.username : "No username";
 
+// Show user info
 document.getElementById("user").innerHTML = `
 <b>Name:</b> ${name}<br>
 <b>Username:</b> ${username}<br>
-<b>Telegram ID:</b> ${telegramId}
+<b>Telegram ID:</b> ${telegramId || "N/A"}
 `;
 
-const ngn = window.USER_BALANCES?.[telegramId]?.ngn || 0;
+// Load balance safely
+async function loadBalance() {
+  let ngn = 0;
 
-fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD")
-  .then(r => r.json())
-  .then(d => {
-    const usd = (ngn * d.rates.USD).toFixed(2);
+  // Check if ID exists in balance.js
+  if (telegramId && window.USER_BALANCES?.[telegramId]?.ngn) {
+    ngn = window.USER_BALANCES[telegramId].ngn;
+  }
+
+  try {
+    const res = await fetch("https://api.exchangerate.host/latest?base=NGN&symbols=USD");
+    const data = await res.json();
+    const usd = ngn * (data.rates.USD || 0.0024); // fallback if API fails
     document.getElementById("balance").innerHTML = `
       <b>Balance</b><br>
-      ₦${ngn.toLocaleString()} ≈ $${usd}
+      ₦${ngn.toLocaleString()} ≈ $${usd.toFixed(2)}
     `;
-  });
+  } catch {
+    document.getElementById("balance").innerHTML = `
+      <b>Balance</b><br>
+      ₦${ngn.toLocaleString()} ≈ $0.00
+    `;
+  }
+}
+loadBalance();
 
-const hasPromo =
-  Array.isArray(window.PROMO_LIST) &&
-  window.PROMO_LIST.includes(telegramId);
+// Promo access
+const hasPromo = Array.isArray(window.PROMO_LIST) && window.PROMO_LIST.includes(telegramId);
 
 document.getElementById("promo").innerHTML = hasPromo
   ? `<b>Promo Access:</b> ✅ Enabled`
