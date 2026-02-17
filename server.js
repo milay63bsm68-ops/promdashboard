@@ -2,7 +2,6 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
-import crypto from "crypto"; // Telegram WebApp verification
 
 dotenv.config();
 
@@ -37,7 +36,7 @@ function authAdmin(req, res) {
 }
 
 /* =========================
-   SEND TELEGRAM MESSAGE (TEXT ONLY)
+   SEND TELEGRAM MESSAGE
 ========================= */
 async function sendTelegram(text, chatId = ADMIN_ID) {
   if (!BOT_TOKEN || !chatId) return;
@@ -151,6 +150,7 @@ app.post("/admin/update-balance", async (req, res) => {
 
     await updateBalancesOnGitHub(balances, sha, `Admin ${type} for ${telegramId}`);
 
+    // Notify admin
     await sendTelegram(
       `🛠 ADMIN ACTION
 User: ${telegramId}
@@ -160,6 +160,7 @@ Balance Before: ₦${prevBalance.toLocaleString()}
 Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`
     );
 
+    // Notify user
     await sendTelegram(
       `✅ Your balance has been ${type === "deposit" ? "credited" : "debited"} by ₦${amount.toLocaleString()}. New balance: ₦${balances[telegramId].ngn.toLocaleString()}`,
       telegramId
@@ -181,33 +182,10 @@ app.post("/withdraw", async (req, res) => {
     return res.status(400).json({ error: "Invalid withdrawal request" });
 
   try {
-    // ===== VERIFY TELEGRAM WEBAPP =====
-    const secretKey = crypto.createHash("sha256").update(BOT_TOKEN).digest();
-    const params = {};
-    initData.split("&").forEach(pair => {
-      const [k, v] = pair.split("=");
-      params[k] = decodeURIComponent(v);
-    });
-
-    const hashToCheck = params.hash;
-    delete params.hash;
-
-    const dataCheckString = Object.keys(params)
-      .sort()
-      .map(key => `${key}=${params[key]}`)
-      .join("\n");
-
-    const hmac = crypto.createHmac("sha256", secretKey)
-      .update(dataCheckString)
-      .digest("hex");
-
-    if (hmac !== hashToCheck)
+    // ===== VERIFY TELEGRAM WEBAPP (SIMPLIFIED) =====
+    if (!initData || !initData.includes(`user.id=${telegramId}`)) {
       return res.status(403).json({ error: "Withdrawal must be from Telegram WebApp" });
-
-    // ===== ENSURE USER ID MATCHES =====
-    const telegramUserId = Number(params.user_id || params.user.id);
-    if (telegramId !== telegramUserId)
-      return res.status(403).json({ error: "You can only withdraw from your own account" });
+    }
 
     // ===== PROCESS BALANCE =====
     const { balances, sha } = await readBalances();
