@@ -139,6 +139,8 @@ app.post("/admin/update-balance", async (req, res) => {
     const { balances, sha } = await readBalances();
     if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
 
+    const prevBalance = balances[telegramId].ngn; // balance before change
+
     if (type === "deposit") balances[telegramId].ngn += amount;
     if (type === "withdraw") {
       if (balances[telegramId].ngn < amount)
@@ -154,7 +156,8 @@ app.post("/admin/update-balance", async (req, res) => {
 User: ${telegramId}
 Action: ${type.toUpperCase()}
 Amount: ₦${amount.toLocaleString()}
-New Balance: ₦${balances[telegramId].ngn.toLocaleString()}`
+Balance Before: ₦${prevBalance.toLocaleString()}
+Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`
     );
 
     // Notify user
@@ -182,10 +185,12 @@ app.post("/withdraw", async (req, res) => {
     const { balances, sha } = await readBalances();
     if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
 
-    if (balances[telegramId].ngn < amount)
+    const prevBalance = balances[telegramId].ngn; // balance before withdrawal
+
+    if (prevBalance < amount)
       return res.status(400).json({ error: "Insufficient balance" });
 
-    balances[telegramId].ngn -= amount;
+    balances[telegramId].ngn -= amount; // subtract amount
     await updateBalancesOnGitHub(balances, sha, `User withdrawal: ${telegramId}`);
 
     // Notify admin
@@ -194,6 +199,8 @@ app.post("/withdraw", async (req, res) => {
 User: ${telegramId}
 Method: ${method}
 Amount: ₦${amount.toLocaleString()}
+Balance Before: ₦${prevBalance.toLocaleString()}
+Balance After: ₦${balances[telegramId].ngn.toLocaleString()}
 Details: ${JSON.stringify(details, null, 2)}`
     );
 
