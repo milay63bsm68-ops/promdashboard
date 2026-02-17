@@ -87,6 +87,12 @@ input, select {
     Choose how you want to unlock 👇
   </div>
 
+  <!-- TEST CONNECTION -->
+  <div class="card">
+    <button class="copy" onclick="testConnection()">🔍 Test Server Connection</button>
+    <div class="status" id="testStatus"></div>
+  </div>
+
   <div class="card">
     <button class="primary" onclick="showTask()">✅ Complete Simple Task</button>
     <button class="secondary" onclick="showPurchase()">💳 Purchase Access</button>
@@ -206,6 +212,37 @@ function copyText(text){
   });
 }
 
+async function testConnection(){
+  const testStatus = document.getElementById("testStatus");
+  testStatus.innerHTML = "⏳ Testing connection...";
+  
+  try {
+    // Test root endpoint
+    const response = await fetch(BACKEND);
+    const data = await response.json();
+    
+    console.log("Server test response:", data);
+    
+    if(response.ok){
+      testStatus.innerHTML = `✅ Server is running!<br>Status: ${data.status}`;
+    } else {
+      testStatus.innerHTML = `⚠️ Server responded but with error: ${response.status}`;
+    }
+    
+    // Test health endpoint
+    const healthResponse = await fetch(BACKEND + "/health");
+    const healthData = await healthResponse.json();
+    
+    console.log("Health check:", healthData);
+    
+    testStatus.innerHTML += `<br>Bot Token: ${healthData.botToken}<br>Admin ID: ${healthData.adminId}`;
+    
+  } catch(err) {
+    console.error("Connection test failed:", err);
+    testStatus.innerHTML = `❌ Cannot connect to server<br>Error: ${err.message}<br><br>Backend URL: ${BACKEND}`;
+  }
+}
+
 function toBase64(file){
   return new Promise(resolve=>{
     const fr = new FileReader();
@@ -245,6 +282,7 @@ async function submitTask(){
       };
       
       console.log("Sending task payload:", { ...payload, image: "base64_data_hidden" });
+      console.log("Backend URL:", BACKEND+"/unlock-promo");
       
       const response = await fetch(BACKEND+"/unlock-promo", {
         method:"POST",
@@ -252,13 +290,18 @@ async function submitTask(){
         body: JSON.stringify(payload)
       });
       
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+      
       const result = await response.json();
       console.log("Server response:", result);
       
       if(response.ok){
         successCount++;
       } else {
-        throw new Error(result.error || "Failed to send");
+        // Show the actual error from server
+        const errorMsg = result.details || result.error || "Unknown error";
+        throw new Error(errorMsg);
       }
     }
     
@@ -268,7 +311,20 @@ async function submitTask(){
   }catch(err){
     console.error("Error submitting task:", err);
     taskStatus.innerHTML = "❌ Error: " + err.message;
-    tg.showAlert("❌ Failed to submit. Please try again.");
+    
+    // Show detailed error to user
+    const errorDetails = `
+Failed to submit task.
+Error: ${err.message}
+
+Please check:
+1. Server is running
+2. Bot token is configured
+3. Admin ID is set
+4. Internet connection
+    `;
+    
+    tg.showAlert(errorDetails);
   }
 }
 
