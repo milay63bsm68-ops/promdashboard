@@ -34,6 +34,8 @@ button {
 }
 .primary { background:#22c55e; color:white; }
 .secondary { background:#3b82f6; color:white; }
+.whatsapp { background:#25D366; color:white; }
+.copy { background:#334155; color:white; font-size:13px; }
 input, select {
   width:100%;
   padding:12px;
@@ -42,6 +44,7 @@ input, select {
   margin-top:10px;
   background:#020617;
   color:white;
+  height:40px;
 }
 .status {
   margin-top:10px;
@@ -49,14 +52,36 @@ input, select {
   text-align:center;
 }
 .hidden { display:none; }
+.addressBox {
+  margin-top:12px;
+  padding:14px;
+  background:#020617;
+  border-radius:10px;
+  font-size:14px;
+  line-height:1.6;
+}
+.small {
+  font-size:12px;
+  opacity:0.85;
+}
 </style>
 </head>
 
 <body>
 <div class="container">
 
+  <!-- USER INFO -->
   <div class="card" id="userInfo">Loading user info...</div>
 
+  <!-- BOT LINK -->
+  <div class="card">
+    <b>🤖 Promo Bot</b><br><br>
+    <a href="https://t.me/intelpremiumbot" target="_blank">
+      <button class="secondary">🤖 Open Bot</button>
+    </a>
+  </div>
+
+  <!-- UNLOCK OPTIONS -->
   <div class="card">
     <b>🔓 Unlock Promo Earnings</b><br><br>
     Choose how you want to unlock 👇
@@ -70,30 +95,40 @@ input, select {
   <!-- TASK -->
   <div class="card hidden" id="taskBox">
     <b>📌 Task</b><br><br>
-    Join WhatsApp group & invite <b>10 people</b>
-    <input id="taskWhatsapp" placeholder="WhatsApp number">
+    1️⃣ Join WhatsApp group<br>
+    2️⃣ Invite <b>10 people</b><br><br>
+
+    <a href="https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t" target="_blank">
+      <button class="whatsapp">📲 Join WhatsApp Group</button>
+    </a>
+    <button class="copy" onclick="copyText('https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t')">
+      📋 Copy WhatsApp Group Link
+    </button>
+
+    <input id="taskWhatsapp" placeholder="Your WhatsApp number">
     <input id="taskCall" placeholder="Calling number">
     <input type="file" accept="image/*" id="taskShot" multiple>
+
     <button class="primary" onclick="submitTask()">Submit Task</button>
     <div class="status" id="taskStatus"></div>
   </div>
 
   <!-- PURCHASE -->
   <div class="card hidden" id="purchaseBox">
-    <b>🏦 Bank:</b> 9114301708 (Opay)<br>
-    <b>💰 BNB (BEP20):</b><br>
-    <small>0xbBcc409872bC2441400735624638F3D67DAa7C4C</small>
+    <b>💳 Select Payment Method</b>
 
-    <input id="payWhatsapp" placeholder="WhatsApp number">
-    <input id="payCall" placeholder="Calling number">
-
-    <select id="payMethod">
+    <select id="payMethod" onchange="updatePaymentAddress()">
       <option value="">Select method</option>
-      <option>Bank Transfer</option>
-      <option>BNB (BEP20)</option>
+      <option value="bank">Bank Transfer</option>
+      <option value="bnb">BNB Smart Chain (BEP20)</option>
     </select>
 
+    <div id="paymentAddress" class="addressBox hidden"></div>
+
+    <input id="payWhatsapp" placeholder="Your WhatsApp number">
+    <input id="payCall" placeholder="Calling number">
     <input type="file" accept="image/*" id="payShot">
+
     <button class="secondary" onclick="submitPayment()">Submit Payment</button>
     <div class="status" id="payStatus"></div>
   </div>
@@ -104,36 +139,19 @@ input, select {
 const tg = Telegram.WebApp;
 tg.ready();
 
-/* 🔗 BACKEND (UNLOCKPROMO ROUTE) */
-const BACKEND = "https://promdashboard.onrender.com/unlockpromo";
-
+const BACKEND = "https://promdashboard.onrender.com";
 const user = tg.initDataUnsafe?.user || {};
+
 const telegramId = user.id;
 const name = user.first_name || "Guest";
-const username = user.username ? "@" + user.username : "No username";
+const username = user.username ? "@"+user.username : "No username";
 
-/* ELEMENTS */
-const userInfo = document.getElementById("userInfo");
-const taskBox = document.getElementById("taskBox");
-const purchaseBox = document.getElementById("purchaseBox");
-const taskStatus = document.getElementById("taskStatus");
-const payStatus = document.getElementById("payStatus");
-
-const taskWhatsapp = document.getElementById("taskWhatsapp");
-const taskCall = document.getElementById("taskCall");
-
-const payWhatsapp = document.getElementById("payWhatsapp");
-const payCall = document.getElementById("payCall");
-const payMethod = document.getElementById("payMethod");
-
-/* USER INFO */
-userInfo.innerHTML = `
+document.getElementById("userInfo").innerHTML = `
 <b>Name:</b> ${name}<br>
 <b>Username:</b> ${username}<br>
 <b>ID:</b> ${telegramId}
 `;
 
-/* UI SWITCH */
 function showTask(){
   taskBox.classList.remove("hidden");
   purchaseBox.classList.add("hidden");
@@ -146,87 +164,107 @@ function showPurchase(){
   payStatus.innerHTML = "";
 }
 
-/* BASE64 */
+function updatePaymentAddress(){
+  const method = payMethod.value;
+  const box = document.getElementById("paymentAddress");
+
+  if(method === "bank"){
+    box.innerHTML = `
+<b>🏦 Bank Transfer Details</b><br><br>
+<b>Account Name:</b><br>Intel Premium<br><br>
+<b>Account Number:</b><br><span id="bankAcc">9114301708</span><br><br>
+<b>Bank Name:</b><br>Opay<br><br>
+<button class="copy" onclick="copyText('9114301708')">📋 Copy Account Number</button>
+    `;
+    box.classList.remove("hidden");
+  } 
+  else if(method === "bnb"){
+    box.innerHTML = `
+<b>💎 Crypto Payment</b><br><br>
+<b>Network:</b><br>BNB Smart Chain (BEP20)<br><br>
+<b>Wallet Address:</b><br><span id="bnbAddr">0xbBcc409872bC2441400735624638F3D67DAa7C4C</span><br><br>
+<button class="copy" onclick="copyText('0xbBcc409872bC2441400735624638F3D67DAa7C4C')">📋 Copy Wallet Address</button>
+<p class="small">⚠️ Send ONLY <b>BNB (BEP20)</b> to this address. Sending other tokens will result in permanent loss.</p>
+    `;
+    box.classList.remove("hidden");
+  } 
+  else {
+    box.classList.add("hidden");
+  }
+}
+
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>{ alert("Copied successfully ✅"); });
+}
+
 function toBase64(file){
   return new Promise(resolve=>{
     const fr = new FileReader();
-    fr.onload = () => resolve(fr.result);
+    fr.onload = ()=>resolve(fr.result);
     fr.readAsDataURL(file);
   });
 }
 
-/* SUBMIT TASK */
 async function submitTask(){
-  const files = document.getElementById("taskShot").files;
-
+  const files = taskShot.files;
   if(!files.length){
     taskStatus.innerHTML = "❌ Upload at least one screenshot";
     return;
   }
-
   taskStatus.innerHTML = "⏳ Sending task...";
-
   try{
-    for(const f of files){
+    for(let f of files){
       const image = await toBase64(f);
-      const message = `🟢 PROMO TASK SUBMISSION
-Name: ${name}
-Username: ${username}
-ID: ${telegramId}
-WhatsApp: ${taskWhatsapp.value}
-Call: ${taskCall.value}`;
-
-      await fetch(BACKEND + "/submit", {
+      const payload = {
+        telegramId,
+        name,
+        username,
+        method: "",
+        whatsapp: taskWhatsapp.value,
+        call: taskCall.value,
+        image,
+        type: "task"
+      };
+      await fetch(BACKEND+"/unlock-promo", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ message, image, telegramId })
+        body: JSON.stringify(payload)
       });
     }
-
     taskStatus.innerHTML = "✅ Task sent for review";
-    setTimeout(() => tg.close(), 1200);
-
+    tg.close();
   }catch(err){
     console.error(err);
     taskStatus.innerHTML = "❌ Error sending task";
   }
 }
 
-/* SUBMIT PAYMENT */
 async function submitPayment(){
-  const file = document.getElementById("payShot").files[0];
-
-  if(!file){
-    payStatus.innerHTML = "❌ Upload payment proof";
+  const file = payShot.files[0];
+  if(!file || !payMethod.value){
+    payStatus.innerHTML = "❌ Select method & upload proof";
     return;
   }
-
-  if(!payMethod.value){
-    payStatus.innerHTML = "❌ Select payment method";
-    return;
-  }
-
   payStatus.innerHTML = "⏳ Sending payment...";
-
   try{
     const image = await toBase64(file);
-    const message = `🟡 PROMO PAYMENT
-Name: ${name}
-Username: ${username}
-ID: ${telegramId}
-Method: ${payMethod.value}
-WhatsApp: ${payWhatsapp.value}
-Call: ${payCall.value}`;
-
-    await fetch(BACKEND + "/submit", {
+    const payload = {
+      telegramId,
+      name,
+      username,
+      method: payMethod.value,
+      whatsapp: payWhatsapp.value,
+      call: payCall.value,
+      image,
+      type: "payment"
+    };
+    await fetch(BACKEND+"/unlock-promo", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ message, image, telegramId })
+      body: JSON.stringify(payload)
     });
-
-    payStatus.innerHTML = "✅ Payment sent for confirmation";
-    setTimeout(() => tg.close(), 1200);
-
+    payStatus.innerHTML = "✅ Payment sent for review";
+    tg.close();
   }catch(err){
     console.error(err);
     payStatus.innerHTML = "❌ Error sending payment";
