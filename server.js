@@ -27,36 +27,10 @@ const {
 } = process.env;
 
 /* =========================
-   TELEGRAM VERIFICATION
+   TELEGRAM SEND FUNCTION
 ========================= */
-function verifyTelegram(initData) {
-  try {
-    const params = new URLSearchParams(initData);
-    const hash = params.get("hash");
-    params.delete("hash");
-
-    const dataCheckString = [...params.entries()]
-      .sort()
-      .map(([k,v]) => `${k}=${v}`)
-      .join("\n");
-
-    const secret = crypto.createHash("sha256").update(BOT_TOKEN).digest();
-    const hmac = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
-
-    if (hmac !== hash) return null;
-
-    const user = JSON.parse(params.get("user"));
-    return { id: String(user.id), first_name: user.first_name, username: user.username };
-  } catch {
-    return null;
-  }
-}
-
-/* =========================
-   TELEGRAM SEND
-========================= */
-async function sendTelegram(text, chatId = ADMIN_ID) {
-  if (!BOT_TOKEN || !chatId) return;
+async function sendTelegram(text, chatId){
+  if(!BOT_TOKEN || !chatId) return;
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
@@ -67,7 +41,7 @@ async function sendTelegram(text, chatId = ADMIN_ID) {
 /* =========================
    GITHUB BALANCES
 ========================= */
-async function readBalances() {
+async function readBalances(){
   const r = await fetch(
     `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
     { headers:{ Authorization:`token ${GITHUB_TOKEN}` } }
@@ -80,7 +54,7 @@ async function readBalances() {
   };
 }
 
-async function updateBalances(balances, sha, message) {
+async function updateBalances(balances, sha, message){
   const content = "window.USER_BALANCES = " + JSON.stringify(balances,null,2);
   await fetch(
     `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
@@ -111,59 +85,53 @@ function authAdmin(req,res){
 }
 
 /* =========================
+   PASSCODE STORAGE
+========================= */
+const passcodes = {}; // { telegramId: { passcode, expiresAt } }
+
+/* =========================
    SERVE FILES
 ========================= */
 app.get("/withdraw",(req,res)=>res.sendFile(path.join(__dirname,"withdraw.html")));
 app.get("/admin",(req,res)=>res.sendFile(path.join(__dirname,"admin.html")));
 
 /* =========================
-   USER BALANCES
+   GET USER BALANCE
 ========================= */
 app.post("/get-balance", async (req,res)=>{
-  const { balances } = await readBalances();
-  // If admin wants to check for a dashboard with Telegram ID
   const telegramId = req.body.telegramId ? String(req.body.telegramId) : null;
   if(!telegramId) return res.json({ ngn: 0 });
+
+  const { balances } = await readBalances();
   if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
+
   res.json(balances[telegramId]);
 });
-
-/* =========================
-   PASSCODE STORAGE
-========================= */
-const passcodes = {}; // { telegramId: { passcode, expiresAt } }
 
 /* =========================
    GENERATE PASSCODE
 ========================= */
 app.post("/generate-passcode", async (req,res)=>{
-  const initData = req.body.initData;
-  const user = verifyTelegram(initData);
-  if(!user) return res.status(401).json({ error:"Unauthorized: Telegram verification failed" });
+  const telegramId = req.body.telegramId ? String(req.body.telegramId) : null;
+  if(!telegramId) return res.status(400).json({ error:"Missing Telegram ID" });
 
-  const telegramId = user.id;
-
-  // Generate 6-digit random passcode
   const passcode = Math.floor(100000 + Math.random()*900000).toString();
-  const expiresAt = Date.now() + 5*60*1000; // 5 minutes validity
+  const expiresAt = Date.now() + 5*60*1000; // 5 minutes
 
   passcodes[telegramId] = { passcode, expiresAt };
 
-  // Send passcode via Telegram
+  // Send passcode to Telegram
   await sendTelegram(`💳 Your withdrawal passcode is: ${passcode}`, telegramId);
 
-  res.json({ success:true, message:"Passcode generated and sent via Telegram" });
+  res.json({ success:true, message:"Passcode sent to your Telegram bot" });
 });
 
 /* =========================
    WITHDRAW
 ========================= */
 app.post("/withdraw", async (req,res)=>{
-  const { initData, method, amount, details, passcode } = req.body;
-  const user = verifyTelegram(initData);
-  if(!user) return res.status(401).json({ error:"Unauthorized: Telegram verification failed" });
-
-  const telegramId = user.id;
+  const { telegramId, method, amount, details, passcode } = req.body;
+  if(!telegramId) return res.status(400).json({ error:"Missing Telegram ID" });
 
   // Validate passcode
   const record = passcodes[telegramId];
@@ -197,18 +165,17 @@ app.post("/withdraw", async (req,res)=>{
 
   // Notify admin
   await sendTelegram(`💸 WITHDRAW REQUEST
-User: ${telegramId} (${user.username || "N/A"})
-Name: ${user.first_name || "N/A"}
+User: ${telegramId}
 Method: ${method}
 Amount: ₦${amountNGN.toLocaleString()} ${usdAmount?`($${usdAmount})`:""}
 Before: ₦${before.toLocaleString()}
 After: ₦${balances[telegramId].ngn.toLocaleString()}
-Details: ${JSON.stringify(details,null,2)}`);
+Details: ${JSON.stringify(details,null,2)}`, ADMIN_ID);
 
   // Notify user
   await sendTelegram(`✅ Withdrawal request received.\nAmount: ₦${amountNGN.toLocaleString()}`, telegramId);
 
-  // Delete used passcode
+  // Delete passcode
   delete passcodes[telegramId];
 
   res.json({ newBalance: balances[telegramId].ngn });
@@ -250,7 +217,7 @@ User: ${telegramId}
 Action: ${type.toUpperCase()}
 Amount: ₦${amount.toLocaleString()}
 Balance Before: ₦${prev.toLocaleString()}
-Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`);
+Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`, ADMIN_ID);
 
   res.json({ newBalance: balances[telegramId].ngn });
 });
