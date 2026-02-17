@@ -1,9 +1,11 @@
 import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
+import FormData from "form-data";
+import { Buffer } from "buffer";
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increased limit for images
 
 // Allow cross-origin requests
 app.use(cors({
@@ -57,20 +59,53 @@ async function sendTelegram(chatId, text, replyMarkup = null) {
   });
 }
 
-// ---------------- SEND TELEGRAM PHOTO ----------------
+// ---------------- SEND TELEGRAM PHOTO (FIXED VERSION) ----------------
 async function sendTelegramPhoto(chatId, imageBase64, caption, replyMarkup = null) {
   if (!chatId || !imageBase64) return;
-  const photo = imageBase64.split(",")[1]; // remove base64 header
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: Number(chatId),
-      photo,
-      caption,
-      reply_markup: replyMarkup
-    })
-  });
+  
+  try {
+    // Remove the data:image/...;base64, prefix if present
+    const base64Data = imageBase64.includes(',') 
+      ? imageBase64.split(',')[1] 
+      : imageBase64;
+    
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    // Create form data
+    const form = new FormData();
+    form.append('chat_id', chatId);
+    form.append('photo', imageBuffer, {
+      filename: 'photo.jpg',
+      contentType: 'image/jpeg'
+    });
+    form.append('caption', caption);
+    
+    if (replyMarkup) {
+      form.append('reply_markup', JSON.stringify(replyMarkup));
+    }
+    
+    // Send to Telegram
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+      {
+        method: 'POST',
+        body: form,
+        headers: form.getHeaders()
+      }
+    );
+    
+    const result = await response.json();
+    if (!result.ok) {
+      console.error('Telegram API error:', result);
+      throw new Error(result.description || 'Failed to send photo');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error sending photo to Telegram:', error);
+    throw error;
+  }
 }
 
 // ---------------- USD RATE ----------------
@@ -179,6 +214,9 @@ app.post("/notify-admin-image", async (req, res) => {
     };
 
     await sendTelegramPhoto(ADMIN_ID, image, message, keyboard);
+    
+    // Also send confirmation to user
+    await sendTelegram(telegramId, "✅ Your submission has been sent to admin for review.");
 
     res.json({ success: true });
   } catch (e) {
