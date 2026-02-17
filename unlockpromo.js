@@ -4,16 +4,16 @@ import FormData from "form-data";
 
 const router = express.Router();
 
-const { BOT_TOKEN, ADMIN_ID } = process.env;
+// Telegram bot token from environment
+const BOT_TOKEN = process.env.BOT_TOKEN;
+// Directly using your admin Telegram ID
+const ADMIN_ID = 6940101627;
 
 /* =========================
    HELPER FUNCTIONS
 ========================= */
-async function sendTelegramPhoto(chatId, caption, base64Image) {
-  if (!BOT_TOKEN || !chatId) {
-    console.error("Missing BOT_TOKEN or chatId for sendTelegramPhoto");
-    return { ok: false, error: "Missing BOT_TOKEN or chatId" };
-  }
+async function sendTelegramPhoto(chatId, caption, base64Image, retries = 1) {
+  if (!BOT_TOKEN || !chatId) return { ok: false, error: "Missing BOT_TOKEN or chatId" };
 
   try {
     // Remove base64 prefix (data:image/png;base64,...)
@@ -28,26 +28,26 @@ async function sendTelegramPhoto(chatId, caption, base64Image) {
 
     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: "POST",
-      body: form,
+      body: form
     });
 
     const result = await res.json();
     if (!result.ok) {
       console.error("Telegram sendPhoto failed:", result);
-      return { ok: false, error: result.description || "Failed to send photo" };
+      if (retries > 0) {
+        console.log("Retrying sendPhoto...");
+        return sendTelegramPhoto(chatId, caption, base64Image, retries - 1);
+      }
     }
-    return { ok: true };
+    return result;
   } catch (err) {
-    console.error("sendTelegramPhoto error:", err);
+    console.error("Error in sendTelegramPhoto:", err);
     return { ok: false, error: err.message };
   }
 }
 
 async function sendTelegramMessage(chatId, text) {
-  if (!BOT_TOKEN || !chatId) {
-    console.error("Missing BOT_TOKEN or chatId for sendTelegramMessage");
-    return { ok: false, error: "Missing BOT_TOKEN or chatId" };
-  }
+  if (!BOT_TOKEN || !chatId) return { ok: false, error: "Missing BOT_TOKEN or chatId" };
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -56,18 +56,14 @@ async function sendTelegramMessage(chatId, text) {
       body: JSON.stringify({
         chat_id: Number(chatId),
         text,
-        parse_mode: "HTML",
-      }),
+        parse_mode: "HTML"
+      })
     });
-
     const result = await res.json();
-    if (!result.ok) {
-      console.error("Telegram sendMessage failed:", result);
-      return { ok: false, error: result.description || "Failed to send message" };
-    }
-    return { ok: true };
+    if (!result.ok) console.error("Telegram sendMessage failed:", result);
+    return result;
   } catch (err) {
-    console.error("sendTelegramMessage error:", err);
+    console.error("Error in sendTelegramMessage:", err);
     return { ok: false, error: err.message };
   }
 }
@@ -85,7 +81,7 @@ router.post("/unlock-promo", async (req, res) => {
   const caption = `
 <b>🟢 New ${type === "task" ? "Task" : "Payment"} Submission</b>
 Name: ${name}
-Username: ${username || "-"}
+Username: ${username}
 ID: ${telegramId}
 Method: ${method || "-"}
 WhatsApp: ${whatsapp || "-"}
@@ -93,26 +89,27 @@ Call: ${call || "-"}
 `;
 
   try {
-    // 1️⃣ Send all details to admin
+    // Send submission to admin
     const adminResult = await sendTelegramPhoto(ADMIN_ID, caption, image);
+    console.log("Admin send result:", adminResult);
 
-    // 2️⃣ Notify user (simple confirmation only)
+    // Notify user with simple confirmation
     const userResult = await sendTelegramMessage(
       telegramId,
-      `✅ Your ${type} submission has been received.\nThe admin will review it and approve soon.`
+      `✅ Your ${type} submission has been received.\nThe admin will review it soon.`
     );
+    console.log("User send result:", userResult);
 
-    // 3️⃣ Respond with success/failure status
-    const response = {
-      success: adminResult.ok && userResult.ok,
-      adminStatus: adminResult.ok ? "Message sent to admin" : `Failed: ${adminResult.error}`,
-      userStatus: userResult.ok ? "Confirmation sent to user" : `Failed: ${userResult.error}`,
+    // Respond with status showing whether admin and user messages succeeded
+    const statusMessage = {
+      admin: adminResult.ok ? "Sent" : `Failed: ${adminResult.error || "Unknown"}`,
+      user: userResult.ok ? "Sent" : `Failed: ${userResult.error || "Unknown"}`
     };
 
-    res.json(response);
+    res.json({ success: true, message: "Submission processed", status: statusMessage });
   } catch (err) {
     console.error("Error in /unlock-promo:", err);
-    res.status(500).json({ error: "Failed to send submission" });
+    res.status(500).json({ error: "Failed to send submission", details: err.message });
   }
 });
 
