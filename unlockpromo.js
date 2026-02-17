@@ -1,6 +1,5 @@
 import express from "express";
 import fetch from "node-fetch";
-import FormData from "form-data";
 
 const router = express.Router();
 
@@ -16,19 +15,16 @@ async function sendTelegramPhoto(chatId, caption, base64Image, retries = 1) {
   if (!BOT_TOKEN || !chatId) return { ok: false, error: "Missing BOT_TOKEN or chatId" };
 
   try {
-    // Remove base64 prefix (data:image/png;base64,...)
-    const base64Data = base64Image.split(",")[1];
-    const buffer = Buffer.from(base64Data, "base64");
-
-    const form = new FormData();
-    form.append("chat_id", chatId);
-    form.append("caption", caption);
-    form.append("parse_mode", "HTML");
-    form.append("photo", buffer, { filename: "submission.png" });
-
+    // Telegram accepts full data URL directly
     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: "POST",
-      body: form
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: Number(chatId),
+        photo: base64Image,
+        caption: caption,
+        parse_mode: "HTML"
+      })
     });
 
     const result = await res.json();
@@ -93,20 +89,21 @@ Call: ${call || "-"}
     const adminResult = await sendTelegramPhoto(ADMIN_ID, caption, image);
     console.log("Admin send result:", adminResult);
 
-    // Notify user with simple confirmation
+    // Notify user
     const userResult = await sendTelegramMessage(
       telegramId,
       `✅ Your ${type} submission has been received.\nThe admin will review it soon.`
     );
     console.log("User send result:", userResult);
 
-    // Respond with status showing whether admin and user messages succeeded
-    const statusMessage = {
-      admin: adminResult.ok ? "Sent" : `Failed: ${adminResult.error || "Unknown"}`,
-      user: userResult.ok ? "Sent" : `Failed: ${userResult.error || "Unknown"}`
-    };
-
-    res.json({ success: true, message: "Submission processed", status: statusMessage });
+    res.json({
+      success: true,
+      message: "Submission processed",
+      status: {
+        admin: adminResult.ok ? "Sent" : `Failed: ${adminResult.error || "Unknown"}`,
+        user: userResult.ok ? "Sent" : `Failed: ${userResult.error || "Unknown"}`
+      }
+    });
   } catch (err) {
     console.error("Error in /unlock-promo:", err);
     res.status(500).json({ error: "Failed to send submission", details: err.message });
