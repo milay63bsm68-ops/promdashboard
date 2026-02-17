@@ -27,32 +27,6 @@ const {
 } = process.env;
 
 /* =========================
-   TELEGRAM VERIFICATION
-========================= */
-function verifyTelegram(initData) {
-  try {
-    const params = new URLSearchParams(initData);
-    const hash = params.get("hash");
-    params.delete("hash");
-
-    const dataCheckString = [...params.entries()]
-      .sort()
-      .map(([k,v]) => `${k}=${v}`)
-      .join("\n");
-
-    const secret = crypto.createHash("sha256").update(BOT_TOKEN).digest();
-    const hmac = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
-
-    if (hmac !== hash) return null;
-
-    const user = JSON.parse(params.get("user"));
-    return String(user.id);
-  } catch {
-    return null;
-  }
-}
-
-/* =========================
    TELEGRAM SEND
 ========================= */
 async function sendTelegram(text, chatId = ADMIN_ID) {
@@ -120,19 +94,8 @@ app.get("/admin",(req,res)=>res.sendFile(path.join(__dirname,"admin.html")));
    GET BALANCE
 ========================= */
 app.post("/get-balance", async (req,res)=>{
-  let telegramId = null;
-
-  // Try Telegram verification first
-  if (req.body.initData) {
-    telegramId = verifyTelegram(req.body.initData);
-  }
-
-  // Fallback to legacy telegramId (read-only)
-  if (!telegramId && req.body.telegramId) {
-    telegramId = String(req.body.telegramId);
-  }
-
-  if (!telegramId) return res.json({ ngn: 0 });
+  const telegramId = req.body.telegramId;
+  if(!telegramId) return res.json({ ngn: 0 });
 
   const { balances } = await readBalances();
   if (!balances[telegramId]) balances[telegramId] = { ngn:0 };
@@ -141,16 +104,47 @@ app.post("/get-balance", async (req,res)=>{
 });
 
 /* =========================
-   USER WITHDRAW (SAFE)
+   WITHDRAWAL PASSCODES
+========================= */
+const passcodes = {}; // { "user123": "123456" }
+
+function generatePasscode(userId){
+  const code = Math.floor(100000 + Math.random()*900000); // 6-digit
+  passcodes[userId] = code.toString();
+  // Auto expire after 10 minutes
+  setTimeout(()=>delete passcodes[userId], 10*60*1000);
+  return code;
+}
+
+/* =========================
+   GENERATE PASSCODE
+========================= */
+app.post("/generate-passcode", async (req,res)=>{
+  const { telegramId } = req.body;
+  if(!telegramId) return res.status(400).json({error:"Missing user ID"});
+  const code = generatePasscode(telegramId);
+  // Optionally send code via Telegram if BOT_TOKEN is set
+  await sendTelegram(`🔑 Your withdrawal code: ${code}`, telegramId);
+  res.json({ passcode: code });
+});
+
+/* =========================
+   USER WITHDRAW (PASSCODE)
 ========================= */
 app.post("/withdraw", async (req,res)=>{
-  const { initData, amount, method, details } = req.body;
-  const telegramId = verifyTelegram(initData);
+  const { telegramId, passcode, amount, method, details } = req.body;
 
-  if(!telegramId) return res.status(401).json({ error:"Unauthorized" });
+  if(!telegramId || !passcode) 
+    return res.status(401).json({ error:"User ID and passcode required" });
+
+  if(!passcodes[telegramId] || passcodes[telegramId] !== passcode)
+    return res.status(401).json({ error:"Invalid or expired passcode" });
+
+  delete passcodes[telegramId]; // consume passcode
 
   const safeAmount = Number(amount);
-  if(!safeAmount || safeAmount <= 0) return res.status(400).json({ error:"Invalid amount" });
+  if(!safeAmount || safeAmount <= 0) 
+    return res.status(400).json({ error:"Invalid amount" });
 
   const { balances, sha } = await readBalances();
   if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
