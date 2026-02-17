@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="balance.js"></script>
 <script src="https://milay63bsm68-ops.github.io/repro/promolist.js"></script>
 
 <style>
@@ -69,7 +68,7 @@ small {
   <div class="card" id="promo"></div>
 
   <div class="card">
-    <button class="withdraw" onclick="location.href='withdraw.html'">
+    <button class="withdraw" onclick="location.href='https://promdashboard.onrender.com/withdraw'">
       💸 Withdraw
     </button>
 
@@ -94,10 +93,22 @@ document.getElementById("user").innerHTML = `
 <b>Telegram ID:</b> ${telegramId || "N/A"}
 `;
 
-function getUserBalance() {
-  if (!window.USER_BALANCES) return 0;
-  if (!telegramId || !window.USER_BALANCES[telegramId]) return 0;
-  return window.USER_BALANCES[telegramId].ngn || 0;
+// ---------------------------
+// Fetch user balance from server
+// ---------------------------
+async function getUserBalance() {
+  if (!telegramId) return 0;
+  try {
+    const res = await fetch("/get-balance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegramId })
+    });
+    const data = await res.json();
+    return data?.ngn || 0;
+  } catch {
+    return 0;
+  }
 }
 
 async function fetchUsdRate() {
@@ -111,7 +122,7 @@ async function fetchUsdRate() {
 }
 
 async function loadBalance() {
-  const ngn = getUserBalance();
+  const ngn = await getUserBalance();
   const usdRate = await fetchUsdRate();
 
   document.getElementById("balance").innerHTML = `
@@ -157,6 +168,9 @@ async function loadBalance() {
 }
 loadBalance();
 
+// ---------------------------
+// Promo code logic
+// ---------------------------
 function checkPromo() {
   const promoContainer = document.getElementById("promo");
   if (!Array.isArray(PROMO_LIST) || !telegramId) return;
