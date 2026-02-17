@@ -2,7 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
-import crypto from "crypto"; // added for Telegram WebApp verification
+import crypto from "crypto"; // Telegram WebApp verification
 
 dotenv.config();
 
@@ -41,7 +41,7 @@ function authAdmin(req, res) {
 ========================= */
 async function sendTelegram(text, chatId = ADMIN_ID) {
   if (!BOT_TOKEN || !chatId) return;
-  chatId = Number(chatId); // ensure numeric ID
+  chatId = Number(chatId);
 
   try {
     const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -140,7 +140,7 @@ app.post("/admin/update-balance", async (req, res) => {
     const { balances, sha } = await readBalances();
     if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
 
-    const prevBalance = balances[telegramId].ngn; // balance before change
+    const prevBalance = balances[telegramId].ngn;
 
     if (type === "deposit") balances[telegramId].ngn += amount;
     if (type === "withdraw") {
@@ -151,7 +151,6 @@ app.post("/admin/update-balance", async (req, res) => {
 
     await updateBalancesOnGitHub(balances, sha, `Admin ${type} for ${telegramId}`);
 
-    // Notify admin
     await sendTelegram(
       `🛠 ADMIN ACTION
 User: ${telegramId}
@@ -161,7 +160,6 @@ Balance Before: ₦${prevBalance.toLocaleString()}
 Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`
     );
 
-    // Notify user
     await sendTelegram(
       `✅ Your balance has been ${type === "deposit" ? "credited" : "debited"} by ₦${amount.toLocaleString()}. New balance: ₦${balances[telegramId].ngn.toLocaleString()}`,
       telegramId
@@ -185,18 +183,25 @@ app.post("/withdraw", async (req, res) => {
   try {
     // ===== VERIFY TELEGRAM WEBAPP =====
     const secretKey = crypto.createHash("sha256").update(BOT_TOKEN).digest();
+    const params = {};
+    initData.split("&").forEach(pair => {
+      const [k, v] = pair.split("=");
+      params[k] = decodeURIComponent(v);
+    });
 
-    const dataCheckArr = initData
-      .split("&")
-      .map(pair => pair.split("="))
-      .map(([k, v]) => [k, decodeURIComponent(v)])
-      .sort(([a], [b]) => a.localeCompare(b));
+    const hashToCheck = params.hash;
+    delete params.hash;
 
-    const dataCheckString = dataCheckArr.map(([k, v]) => `${k}=${v}`).join("\n");
-    const hmac = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+    const dataCheckString = Object.keys(params)
+      .sort()
+      .map(key => `${key}=${params[key]}`)
+      .join("\n");
 
-    const params = Object.fromEntries(dataCheckArr);
-    if (hmac !== params.hash)
+    const hmac = crypto.createHmac("sha256", secretKey)
+      .update(dataCheckString)
+      .digest("hex");
+
+    if (hmac !== hashToCheck)
       return res.status(403).json({ error: "Withdrawal must be from Telegram WebApp" });
 
     // ===== ENSURE USER ID MATCHES =====
