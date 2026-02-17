@@ -5,8 +5,6 @@
 <title>Withdraw</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
 * { box-sizing: border-box; }
 body { background:#020617; color:white; font-family:Arial, sans-serif; padding:14px; margin:0; }
@@ -76,25 +74,20 @@ button:disabled { opacity:0.5; }
     <input id="whatsapp" placeholder="WhatsApp Number">
     <input id="phone" placeholder="Phone Number">
 
-    <button id="withdrawBtn">Submit Withdrawal</button>
+    <button id="generatePasscodeBtn">Generate Withdrawal Passcode</button>
+    <input id="passcode" placeholder="Enter passcode" class="hidden">
+    <button id="withdrawBtn" class="hidden">Submit Withdrawal</button>
     <div id="msgBox"></div>
   </div>
 
 </div>
 
 <script>
-const tg = window.Telegram?.WebApp;
-tg?.ready();
-
-const initData = tg?.initData;
-const user = tg?.initDataUnsafe?.user;
-
 const userInfo = document.getElementById("userInfo");
 const balanceBox = document.getElementById("balanceBox");
 const withdrawForm = document.getElementById("withdrawForm");
 const lowBalanceMsg = document.getElementById("lowBalanceMsg");
 const msgBox = document.getElementById("msgBox");
-const withdrawBtn = document.getElementById("withdrawBtn");
 
 const method = document.getElementById("method");
 const bank = document.getElementById("bank");
@@ -107,25 +100,19 @@ const acctNumber = document.getElementById("acctNumber");
 const whatsapp = document.getElementById("whatsapp");
 const phone = document.getElementById("phone");
 
+const generatePasscodeBtn = document.getElementById("generatePasscodeBtn");
+const passcodeInput = document.getElementById("passcode");
+const withdrawBtn = document.getElementById("withdrawBtn");
+
 let balanceNGN = 0;
 let usdRate = 0.0026;
 
-if(!initData){
-  userInfo.innerHTML = "❌ Open this page inside Telegram WebApp.";
-}
-
-if(user){
-  userInfo.innerHTML = `
-    <b>Name:</b> ${user.first_name || "N/A"}<br>
-    <b>Username:</b> ${user.username ? "@"+user.username : "N/A"}<br>
-    <b>ID:</b> ${user.id}
-  `;
-}
-
+// Simple message display
 function showMsg(text,type="success"){
   msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
 }
 
+// Fetch USD rate
 async function fetchUsdRate(){
   try{
     const r = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
@@ -134,15 +121,15 @@ async function fetchUsdRate(){
   }catch{}
 }
 
+// Load balance
 async function loadBalance(){
-  if(!initData) return;
   showMsg("Loading balance…","loading");
 
   try{
     const res = await fetch("/get-balance",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ initData })
+      body: JSON.stringify({})
     });
 
     const data = await res.json();
@@ -171,32 +158,57 @@ loadBalance();
 
 // Show/hide fields
 method.onchange = () => {
-  bankFields.classList.toggle("hidden", method.value !== "bank");
-  cryptoFields.classList.toggle("hidden", method.value !== "crypto");
+  document.getElementById("bankFields").classList.toggle("hidden", method.value !== "bank");
+  document.getElementById("cryptoFields").classList.toggle("hidden", method.value !== "crypto");
 };
 bank.onchange = () => {
   otherBank.classList.toggle("hidden", bank.value !== "Other");
 };
 
-// Withdraw
+// Generate passcode
+generatePasscodeBtn.onclick = async () => {
+  showMsg("Generating passcode…","loading");
+  generatePasscodeBtn.disabled = true;
+
+  try{
+    const res = await fetch("/generate-passcode",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({})
+    });
+
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+
+    showMsg(`✅ Passcode sent via Telegram. Enter it below.`,"success");
+    passcodeInput.classList.remove("hidden");
+    withdrawBtn.classList.remove("hidden");
+  }catch(err){
+    showMsg(err.message,"error");
+    generatePasscodeBtn.disabled = false;
+  }
+};
+
+// Submit withdrawal
 withdrawBtn.onclick = async () => {
   const m = method.value;
   if(!m) return showMsg("Select withdrawal method","error");
 
   let amount = 0;
-
   if(m === "bank"){
     amount = Number(bankAmount.value);
     if(amount < 5000) return showMsg("Minimum ₦5,000","error");
     if(amount > balanceNGN) return showMsg("Insufficient balance","error");
   }
-
   if(m === "crypto"){
     amount = Number(cryptoAmount.value);
     if(amount < 20) return showMsg("Minimum $20","error");
   }
 
-  showMsg("Submitting…","loading");
+  const passcode = passcodeInput.value.trim();
+  if(!passcode) return showMsg("Enter your passcode","error");
+
+  showMsg("Submitting withdrawal…","loading");
   withdrawBtn.disabled = true;
 
   try{
@@ -204,9 +216,9 @@ withdrawBtn.onclick = async () => {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        initData,
         method: m,
         amount,
+        passcode,
         details:{
           bank: bank.value==="Other"?otherBank.value:bank.value,
           accountName: acctName.value,
