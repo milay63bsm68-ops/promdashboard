@@ -1,159 +1,171 @@
 import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
 
-// Allow cross-origin requests
-app.use(cors({
-origin: "*",
-methods: ["GET", "POST"],
-allowedHeaders: ["Content-Type", "x-admin-password"]
-}));
+app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
+app.use(express.json({ limit: "25mb" }));
 
-const {
-ADMIN_PASSWORD,
-GITHUB_TOKEN,
-GITHUB_REPO,
-BALANCE_FILE,
-TELEGRAM_BOT_TOKEN,
-ADMIN_ID,
-PORT
-} = process.env;
+/* =========================
+   SIMPLE IN-MEMORY STORAGE
+   ========================= */
+const balances = {}; // { telegramId: { ngn: number } }
 
-// Admin auth middleware
-function auth(req, res, next) {
-if (req.headers["x-admin-password"] !== ADMIN_PASSWORD) {
-return res.status(401).json({ error: "Unauthorized: Wrong admin password" });
-}
-next();
+/* =========================
+   HELPERS
+   ========================= */
+function authAdmin(req, res) {
+  const pass = req.headers["x-admin-password"];
+  if (!pass || pass !== process.env.ADMIN_PASSWORD) {
+    res.status(401).json({ error: "Unauthorized admin access" });
+    return false;
+  }
+  return true;
 }
 
-// Read balances from GitHub
-async function readBalances() {
-try {
-const r = await fetch(
-https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE},
-{ headers: { Authorization: token ${GITHUB_TOKEN} } }
-);
-if (!r.ok) throw new Error(GitHub API error: ${r.status} - ${await r.text()});
-const f = await r.json();
-const content = Buffer.from(f.content, "base64").toString();
-const jsonString = content.replace("window.USER_BALANCES =", "").trim();
-const balances = JSON.parse(jsonString);
-return { balances, sha: f.sha };
-} catch (err) {
-throw new Error("Failed to read balances: " + err.message);
-}
+async function sendTelegram(text, imageBase64 = null) {
+  const token = process.env.BOT_TOKEN;
+  const chatId = process.env.ADMIN_ID;
+
+  if (!token || !chatId) return;
+
+  if (imageBase64) {
+    const base64 = imageBase64.split(",")[1];
+    await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        caption: text,
+        photo: base64
+      })
+    });
+  } else {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text
+      })
+    });
+  }
 }
 
-// Send Telegram message
-async function sendTelegram(chatId, text) {
-if (!chatId) return console.warn("No chatId provided");
-try {
-const res = await fetch(https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage, {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ chat_id: Number(chatId), text })
-});
-const data = await res.json();
-if (!data.ok) console.warn("Telegram error:", data);
-} catch (err) {
-console.warn("Telegram message failed:", err.message);
-}
-}
+/* =========================
+   USER BALANCE
+   ========================= */
+app.post("/get-balance", (req, res) => {
+  const { telegramId } = req.body;
+  if (!telegramId) return res.json({ ngn: 0 });
 
-// Get live USD rate
-async function getUSDRate() {
-try {
-const res = await fetch("https://api.exchangerate.host/convert?from=NGN&to=USD");
-const data = await res.json();
-if (data?.info?.rate) return data.info.rate;
-return 0.002;
-} catch {
-return 0.002;
-}
-}
-
-/* ---------------- PUBLIC USER BALANCE ---------------- */
-app.post("/get-balance", async (req, res) => {
-try {
-const { telegramId } = req.body;
-if (!telegramId) return res.status(400).json({ error: "Telegram ID required" });
-
-const { balances } = await readBalances();  
-const balance = balances[telegramId]?.ngn || 0;  
-const usdRate = await getUSDRate();  
-const usd = +(balance * usdRate).toFixed(2);  
-
-res.json({ ngn: balance, usd, usdRate });
-
-} catch (err) {
-res.status(500).json({ error: err.message });
-}
+  if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
+  res.json(balances[telegramId]);
 });
 
-/* ---------------- ADMIN NOTIFICATION FROM HTML ---------------- */
-app.post("/notify-admin", async (req, res) => {
-try {
-const { message } = req.body;
-if (!message) return res.status(400).json({ error: "Message required" });
+/* =========================
+   ADMIN – LOAD BALANCE
+   ========================= */
+app.post("/admin/get-balance", (req, res) => {
+  if (!authAdmin(req, res)) return;
 
-await sendTelegram(ADMIN_ID, `📢 Message from WebApp:\n${message}`);  
-res.json({ success: true });
+  const { telegramId } = req.body;
+  if (!telegramId) return res.status(400).json({ error: "Missing Telegram ID" });
 
-} catch (err) {
-console.error("Notify admin error:", err);
-res.status(500).json({ error: err.message });
-}
+  if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
+  res.json(balances[telegramId]);
 });
 
-/* ---------------- USER WITHDRAWAL ---------------- */
+/* =========================
+   ADMIN – DEPOSIT / WITHDRAW
+   ========================= */
+app.post("/admin/update-balance", (req, res) => {
+  if (!authAdmin(req, res)) return;
+
+  const { telegramId, amount, type } = req.body;
+  if (!telegramId || !amount || !type)
+    return res.status(400).json({ error: "Invalid request" });
+
+  if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
+
+  if (type === "deposit") {
+    balances[telegramId].ngn += amount;
+  }
+
+  if (type === "withdraw") {
+    if (balances[telegramId].ngn < amount) {
+      return res.status(400).json({ error: "Insufficient balance" });
+    }
+    balances[telegramId].ngn -= amount;
+  }
+
+  sendTelegram(
+    `🛠 ADMIN ACTION
+User: ${telegramId}
+Action: ${type.toUpperCase()}
+Amount: ₦${amount.toLocaleString()}
+New Balance: ₦${balances[telegramId].ngn.toLocaleString()}`
+  );
+
+  res.json({ newBalance: balances[telegramId].ngn });
+});
+
+/* =========================
+   USER WITHDRAW
+   ========================= */
 app.post("/withdraw", async (req, res) => {
-try {
-const { telegramId, method, amount, details } = req.body;
-if (!telegramId || !method || !amount || !details) {
-return res.status(400).json({ error: "Missing parameters" });
-}
+  const { telegramId, amount, method, details } = req.body;
 
-const { balances, sha } = await readBalances();  
-const current = balances[telegramId]?.ngn || 0;  
+  if (!telegramId || !amount || !method)
+    return res.status(400).json({ error: "Invalid withdrawal request" });
 
-const usdRate = await getUSDRate();  
+  if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
 
-if (method === "bank" && amount < 5000) return res.status(400).json({ error: "Minimum bank withdrawal is ₦5000" });  
-if (method === "crypto" && amount * usdRate < 20) return res.status(400).json({ error: "Minimum crypto withdrawal is $20" });  
-if (amount > current) return res.status(400).json({ error: "Insufficient balance" });  
+  if (balances[telegramId].ngn < amount) {
+    return res.status(400).json({ error: "Insufficient balance" });
+  }
 
-balances[telegramId] = { ngn: current - amount };  
-const updatedContent = "window.USER_BALANCES = " + JSON.stringify(balances, null, 2);  
+  balances[telegramId].ngn -= amount;
 
-const githubRes = await fetch(  
-  `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,  
-  {  
-    method: "PUT",  
-    headers: { Authorization: `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },  
-    body: JSON.stringify({ message: "User withdrawal", content: Buffer.from(updatedContent).toString("base64"), sha })  
-  }  
-);  
-if (!githubRes.ok) throw new Error("Failed to update GitHub balances");  
+  await sendTelegram(
+    `💸 WITHDRAW REQUEST
+User: ${telegramId}
+Method: ${method}
+Amount: ₦${amount.toLocaleString()}
 
-// Notify admin  
-const adminText = `📢 Pending Withdrawal\nUser: ${telegramId}\nMethod: ${method}\nAmount: ₦${amount}\nDetails: ${JSON.stringify(details)}`;  
-await sendTelegram(ADMIN_ID, adminText);  
+Details:
+${JSON.stringify(details, null, 2)}`
+  );
 
-// Notify user  
-await sendTelegram(telegramId, `✅ Withdrawal request submitted!\nAmount: ₦${amount}\nPending admin approval.`);  
-
-res.json({ success: true, newBalance: balances[telegramId].ngn });
-
-} catch (err) {
-console.error("Withdrawal error:", err);
-res.status(500).json({ error: err.message });
-}
+  res.json({ newBalance: balances[telegramId].ngn });
 });
 
-/* ---------------- START SERVER ---------------- */
-const serverPort = PORT || 3000;
-app.listen(serverPort, () => console.log(Admin server running on port ${serverPort}));
+/* =========================
+   ADMIN NOTIFY (TEXT)
+   ========================= */
+app.post("/notify-admin", async (req, res) => {
+  const { message } = req.body;
+  await sendTelegram(message);
+  res.json({ success: true });
+});
+
+/* =========================
+   ADMIN NOTIFY (IMAGE)
+   ========================= */
+app.post("/notify-admin-image", async (req, res) => {
+  const { message, image } = req.body;
+  await sendTelegram(message, image);
+  res.json({ success: true });
+});
+
+/* =========================
+   START SERVER
+   ========================= */
+app.listen(PORT, () => {
+  console.log("API running on port " + PORT);
+});
