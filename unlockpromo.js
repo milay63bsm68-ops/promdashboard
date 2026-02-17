@@ -1,56 +1,76 @@
+import express from "express";
 import fetch from "node-fetch";
 
-export default function unlockPromoRoutes(app) {
-  const { TELEGRAM_BOT_TOKEN, ADMIN_ID } = process.env;
+const router = express.Router();
 
-  async function sendMessage(chatId, text) {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: Number(chatId),
-        text
-      })
-    });
-  }
+const {
+  BOT_TOKEN,
+  ADMIN_ID
+} = process.env;
 
-  async function sendPhoto(chatId, base64Image, caption) {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: Number(chatId),
-        photo: base64Image,
-        caption
-      })
-    });
-  }
+/* =========================
+   HELPER FUNCTIONS
+========================= */
+async function sendTelegramPhoto(chatId, caption, base64Image) {
+  if(!BOT_TOKEN || !chatId) return;
+  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: Number(chatId),
+      photo: base64Image,
+      caption: caption,
+      parse_mode: "HTML"
+    })
+  });
+  return res.json();
+}
 
-  // ===============================
-  // UNLOCK PROMO ENDPOINT
-  // ===============================
-  app.post("/unlockpromo/submit", async (req, res) => {
-    try {
-      const { message, image, telegramId } = req.body;
-
-      if (!message || !image || !telegramId) {
-        return res.status(400).json({ error: "Missing data" });
-      }
-
-      // Send to ADMIN
-      await sendPhoto(ADMIN_ID, image, message);
-
-      // Send confirmation to USER
-      await sendMessage(
-        telegramId,
-        "✅ Your request has been received.\nPlease wait while admin reviews it."
-      );
-
-      res.json({ success: true });
-
-    } catch (err) {
-      console.error("UnlockPromo error:", err);
-      res.status(500).json({ error: "Server error" });
-    }
+async function sendTelegramMessage(chatId, text) {
+  if(!BOT_TOKEN || !chatId) return;
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      chat_id:Number(chatId),
+      text,
+      parse_mode: "HTML"
+    })
   });
 }
+
+/* =========================
+   SUBMIT TASK OR PAYMENT
+========================= */
+router.post("/unlock-promo", async (req,res)=>{
+  const { telegramId, name, username, method, whatsapp, call, image, type } = req.body;
+
+  if(!telegramId || !image || !type){
+    return res.status(400).json({error:"Missing required fields"});
+  }
+
+  const caption = `
+<b>🟢 New ${type === "task" ? "Task" : "Payment"} Submission</b>
+Name: ${name}
+Username: ${username}
+ID: ${telegramId}
+Method: ${method || "-"}
+WhatsApp: ${whatsapp || "-"}
+Call: ${call || "-"}
+`;
+
+  try{
+    // Send to admin
+    await sendTelegramPhoto(ADMIN_ID, caption, image);
+
+    // Notify user
+    await sendTelegramMessage(telegramId, `✅ Your ${type} submission has been received.\nThe admin will review it and approve soon.`);
+
+    res.json({success:true, message:"Sent to admin and user notified"});
+  }catch(err){
+    console.error(err);
+    res.status(500).json({error:"Failed to send submission"});
+  }
+});
+
+export default router;
