@@ -225,15 +225,19 @@ withdrawBtn.onclick = async () => {
   if(!methodVal) return showMsg("Select withdrawal method", "error");
 
   let amountNGN = 0;
+  let usdAmount = 0;
+
   if(methodVal === "bank"){
     amountNGN = Number(bankAmount.value);
     if(amountNGN < 5000) return showMsg("Minimum bank withdrawal is ₦5,000", "error");
     if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
   }
+
   if(methodVal === "crypto"){
-    const usd = Number(cryptoAmount.value);
-    if(usd < 20) return showMsg("Minimum crypto withdrawal is $20", "error");
-    amountNGN = usd / usdRate;
+    usdAmount = Number(cryptoAmount.value);
+    if(usdAmount < 20) return showMsg("Minimum crypto withdrawal is $20", "error");
+    amountNGN = usdAmount / usdRate;
+    amountNGN = Math.round(amountNGN); // round to nearest Naira
     if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
   }
 
@@ -247,7 +251,7 @@ withdrawBtn.onclick = async () => {
       body: JSON.stringify({
         telegramId,
         method: methodVal,
-        amount: Math.round(amountNGN),
+        amount: methodVal==="crypto"?usdAmount:Math.round(amountNGN),
         details:{
           bank: bank.value==="Other"?otherBank.value:bank.value,
           accountName: acctName.value,
