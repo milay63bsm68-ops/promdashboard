@@ -68,7 +68,7 @@ small {
   <div class="card" id="promo"></div>
 
   <div class="card">
-    <button class="withdraw" onclick="location.href='https://promdashboard.onrender.com/withdraw'">
+    <button class="withdraw" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
       💸 Withdraw
     </button>
 
@@ -99,7 +99,7 @@ document.getElementById("user").innerHTML = `
 async function getUserBalance() {
   if (!telegramId) return 0;
   try {
-    const res = await fetch("/get-balance", {
+    const res = await fetch("https://promdashboard.onrender.com/get-balance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ telegramId })
