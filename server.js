@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
@@ -110,83 +111,22 @@ app.post("/get-balance", async (req, res) => {
 });
 
 /* =========================
-   ADMIN – LOAD BALANCE
+   SERVE WITHDRAW PAGE
 ========================= */
-app.post("/admin/get-balance", async (req, res) => {
-  if (!authAdmin(req, res)) return;
-  const { telegramId } = req.body;
-  if (!telegramId) return res.status(400).json({ error: "Missing Telegram ID" });
-
-  try {
-    const { balances } = await readBalances();
-    if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
-    res.json(balances[telegramId]);
-  } catch {
-    res.json({ ngn: 0 });
-  }
+app.get("/withdraw", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "withdraw.html"));
 });
 
 /* =========================
-   ADMIN – DEPOSIT / WITHDRAW
-========================= */
-app.post("/admin/update-balance", async (req, res) => {
-  if (!authAdmin(req, res)) return;
-  const { telegramId, amount, type } = req.body;
-  if (!telegramId || !amount || !type)
-    return res.status(400).json({ error: "Invalid request" });
-
-  try {
-    const { balances, sha } = await readBalances();
-    if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
-
-    const prevBalance = balances[telegramId].ngn;
-
-    if (type === "deposit") balances[telegramId].ngn += amount;
-    if (type === "withdraw") {
-      if (balances[telegramId].ngn < amount)
-        return res.status(400).json({ error: "Insufficient balance" });
-      balances[telegramId].ngn -= amount;
-    }
-
-    await updateBalancesOnGitHub(balances, sha, `Admin ${type} for ${telegramId}`);
-
-    // Notify admin
-    await sendTelegram(
-      `🛠 ADMIN ACTION
-User: ${telegramId}
-Action: ${type.toUpperCase()}
-Amount: ₦${amount.toLocaleString()}
-Balance Before: ₦${prevBalance.toLocaleString()}
-Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`
-    );
-
-    // Notify user
-    await sendTelegram(
-      `✅ Your balance has been ${type === "deposit" ? "credited" : "debited"} by ₦${amount.toLocaleString()}. New balance: ₦${balances[telegramId].ngn.toLocaleString()}`,
-      telegramId
-    );
-
-    res.json({ newBalance: balances[telegramId].ngn });
-  } catch (err) {
-    console.error("Admin update error:", err.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-/* =========================
-   USER WITHDRAW
+   USER WITHDRAW (NO STRICT TG VERIFICATION)
 ========================= */
 app.post("/withdraw", async (req, res) => {
-  const { telegramId, amount, method, details, initData } = req.body;
-  if (!telegramId || !amount || !method || !initData)
+  const { telegramId, amount, method, details } = req.body;
+
+  if (!telegramId || !amount || !method)
     return res.status(400).json({ error: "Invalid withdrawal request" });
 
   try {
-    // ===== VERIFY TELEGRAM WEBAPP (SIMPLIFIED) =====
-    if (!initData || !initData.includes(`user.id=${telegramId}`)) {
-      return res.status(403).json({ error: "Withdrawal must be from Telegram WebApp" });
-    }
-
     // ===== PROCESS BALANCE =====
     const { balances, sha } = await readBalances();
     if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
