@@ -148,11 +148,13 @@ app.post("/withdraw", async(req,res)=>{
 
     // Convert crypto USD to NGN for balance deduction
     let amountNGN = amount;
+    let usdAmount = 0;
     if(method === "crypto"){
       const r = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
       const data = await r.json();
       const usdRate = data.rates.USD || 0.0026;
-      amountNGN = Math.round(amount / usdRate); // convert USD to NGN
+      amountNGN = Math.round(amount / usdRate); // NGN equivalent
+      usdAmount = amount;
     }
 
     if(balances[telegramId].ngn < amountNGN) return res.status(400).json({error:"Insufficient balance"});
@@ -161,17 +163,19 @@ app.post("/withdraw", async(req,res)=>{
     balances[telegramId].ngn -= amountNGN;
     await updateBalancesOnGitHub(balances,sha,`User withdrawal: ${telegramId}`);
 
-    // Notify admin
+    // Notify admin with wallet, NGN and USD amounts
     await sendTelegram(`💸 WITHDRAW REQUEST
 User: ${telegramId}
 Method: ${method}
-Amount: ${method==="crypto" ? "$"+amount : "₦"+amountNGN.toLocaleString()}
+Wallet: ${details.wallet || "N/A"}
+Amount (₦): ₦${amountNGN.toLocaleString()}
+Amount ($): ${method==="crypto"? "$"+usdAmount : "-"}
 Balance Before: ₦${prev.toLocaleString()}
 Balance After: ₦${balances[telegramId].ngn.toLocaleString()}
 Details: ${JSON.stringify(details,null,2)}`);
 
     // Notify user
-    await sendTelegram(`✅ Your withdrawal request of ${method==="crypto"?"$"+amount:"₦"+amountNGN.toLocaleString()} has been submitted and is pending admin approval.`, telegramId);
+    await sendTelegram(`✅ Your withdrawal request of ${method==="crypto"? "$"+usdAmount+" (₦"+amountNGN.toLocaleString()+")" : "₦"+amountNGN.toLocaleString()} has been submitted and is pending admin approval.`, telegramId);
 
     res.json({newBalance:balances[telegramId].ngn});
   }catch(err){ res.status(500).json({error:err.message}); }
