@@ -41,10 +41,10 @@ function authAdmin(req, res) {
 ========================= */
 async function sendTelegram(text, imageBase64 = null, chatId = ADMIN_ID) {
   if (!BOT_TOKEN || !chatId) return;
+  chatId = Number(chatId); // ensure numeric ID
 
   try {
     if (imageBase64) {
-      // Telegram photo must be sent via multipart/form-data
       const form = new FormData();
       const base64 = imageBase64.split(",")[1];
       const buffer = Buffer.from(base64, "base64");
@@ -52,16 +52,20 @@ async function sendTelegram(text, imageBase64 = null, chatId = ADMIN_ID) {
       form.append("caption", text);
       form.append("photo", buffer, { filename: "image.png" });
 
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
         method: "POST",
         body: form
       });
+      const result = await r.json();
+      if (!result.ok) console.error("Telegram sendPhoto error:", result);
     } else {
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, text })
       });
+      const result = await r.json();
+      if (!result.ok) console.error("Telegram sendMessage error:", result);
     }
   } catch (err) {
     console.error("Telegram error:", err.message);
@@ -230,6 +234,8 @@ Details: ${JSON.stringify(details, null, 2)}`
 ========================= */
 app.post("/notify-admin", async (req, res) => {
   const { message } = req.body;
+  if (!message) return res.status(400).json({ error: "Missing message" });
+
   await sendTelegram(message);
   res.json({ success: true });
 });
@@ -239,6 +245,8 @@ app.post("/notify-admin", async (req, res) => {
 ========================= */
 app.post("/notify-admin-image", async (req, res) => {
   const { message, image } = req.body;
+  if (!message || !image) return res.status(400).json({ error: "Missing message or image" });
+
   await sendTelegram(message, image);
   res.json({ success: true });
 });
