@@ -3,8 +3,12 @@ import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,29 +16,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
 app.use(express.json({ limit: "25mb" }));
 
-/* =========================
-   ENV VARIABLES
-========================= */
-const {
-  BOT_TOKEN,
-  ADMIN_ID,
-  ADMIN_PASSWORD,
-  GITHUB_TOKEN,
-  GITHUB_REPO,
-  BALANCE_FILE
-} = process.env;
-
-/* =========================
-   ADMIN AUTH
-========================= */
-function authAdmin(req, res) {
-  const pass = req.headers["x-admin-password"];
-  if (!pass || pass !== ADMIN_PASSWORD) {
-    res.status(401).json({ error: "Unauthorized admin access" });
-    return false;
-  }
-  return true;
-}
+const { BOT_TOKEN, ADMIN_ID, GITHUB_TOKEN, GITHUB_REPO, BALANCE_FILE } = process.env;
 
 /* =========================
    SEND TELEGRAM MESSAGE
@@ -95,7 +77,14 @@ async function updateBalancesOnGitHub(balances, sha, message = "Update balances"
 }
 
 /* =========================
-   USER BALANCE
+   SERVE WITHDRAW HTML
+========================= */
+app.get("/withdraw", (req, res) => {
+  res.sendFile(path.join(__dirname, "withdraw.html"));
+});
+
+/* =========================
+   GET USER BALANCE
 ========================= */
 app.post("/get-balance", async (req, res) => {
   const { telegramId } = req.body;
@@ -111,34 +100,28 @@ app.post("/get-balance", async (req, res) => {
 });
 
 /* =========================
-   SERVE WITHDRAW PAGE
-========================= */
-app.get("/withdraw", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "withdraw.html"));
-});
-
-/* =========================
-   USER WITHDRAW (NO STRICT TG VERIFICATION)
+   USER WITHDRAW
 ========================= */
 app.post("/withdraw", async (req, res) => {
   const { telegramId, amount, method, details } = req.body;
 
-  if (!telegramId || !amount || !method)
+  if (!telegramId || !amount || !method) {
     return res.status(400).json({ error: "Invalid withdrawal request" });
+  }
 
   try {
-    // ===== PROCESS BALANCE =====
     const { balances, sha } = await readBalances();
     if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
 
     const prevBalance = balances[telegramId].ngn;
-    if (prevBalance < amount)
+    if (prevBalance < amount) {
       return res.status(400).json({ error: "Insufficient balance" });
+    }
 
     balances[telegramId].ngn -= amount;
     await updateBalancesOnGitHub(balances, sha, `User withdrawal: ${telegramId}`);
 
-    // ===== NOTIFY ADMIN =====
+    // Notify admin
     await sendTelegram(
       `💸 WITHDRAW REQUEST
 User: ${telegramId}
@@ -149,7 +132,7 @@ Balance After: ₦${balances[telegramId].ngn.toLocaleString()}
 Details: ${JSON.stringify(details, null, 2)}`
     );
 
-    // ===== NOTIFY USER =====
+    // Notify user
     await sendTelegram(
       `✅ Your withdrawal request of ₦${amount.toLocaleString()} has been submitted and is pending admin approval.`,
       telegramId
@@ -163,19 +146,8 @@ Details: ${JSON.stringify(details, null, 2)}`
 });
 
 /* =========================
-   ADMIN NOTIFY (TEXT)
-========================= */
-app.post("/notify-admin", async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ error: "Missing message" });
-
-  await sendTelegram(message);
-  res.json({ success: true });
-});
-
-/* =========================
    START SERVER
 ========================= */
 app.listen(PORT, () => {
-  console.log("API running on port " + PORT);
+  console.log(`Server running on port ${PORT}`);
 });
