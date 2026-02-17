@@ -17,18 +17,14 @@ body {
   margin:0;
   overflow-x:hidden;
 }
-
 .container { max-width:420px; margin:0 auto; }
-
 .card {
   background:#0f172a;
   padding:14px;
   border-radius:14px;
   margin-bottom:12px;
 }
-
 h3 { margin:0 0 8px 0; font-size:14px; font-weight:bold; }
-
 input, select {
   width:100%;
   padding:10px;
@@ -39,7 +35,6 @@ input, select {
   color:white;
   font-size:14px;
 }
-
 button {
   width:100%;
   padding:12px;
@@ -51,22 +46,12 @@ button {
   font-weight:bold;
   font-size:14px;
 }
-
 button:disabled { opacity:0.5; }
-
-.msg {
-  margin-top:10px;
-  padding:8px;
-  border-radius:8px;
-  font-size:13px;
-}
-
+.msg { margin-top:10px; padding:8px; border-radius:8px; font-size:13px; }
 .error { background:#ef4444; }
 .success { background:#22c55e; }
 .loading { background:#facc15; color:black; }
-
 .small { font-size:12px; opacity:0.75; }
-
 .hidden { display:none; }
 </style>
 </head>
@@ -147,11 +132,11 @@ button:disabled { opacity:0.5; }
 </div>
 
 <script>
-const API = "https://promdashboard.onrender.com";
-const tg = window.Telegram.WebApp;
-tg.ready();
+const API = "/withdraw"; // POST directly to server
+const tg = window.Telegram?.WebApp;
+tg?.ready();
 
-const user = tg.initDataUnsafe?.user;
+const user = tg?.initDataUnsafe?.user;
 const telegramId = user ? String(user.id) : null;
 
 const userInfo = document.getElementById("userInfo");
@@ -181,16 +166,14 @@ async function fetchUsdRate() {
     const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
     const data = await res.json();
     return data.rates.USD || 0.0026;
-  } catch {
-    return 0.0026;
-  }
+  } catch { return 0.0026; }
 }
 
-// Load user balance
+// Load user balance from server
 async function loadBalance() {
   showMsg("Loading balance…", "loading");
   try {
-    const r = await fetch(API + "/get-balance", {
+    const r = await fetch("/get-balance", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ telegramId })
@@ -198,7 +181,7 @@ async function loadBalance() {
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
 
-    usdRate = await fetchUsdRate(); // fetch USD rate
+    usdRate = await fetchUsdRate();
     const usd = balanceNGN * usdRate;
 
     balanceBox.innerHTML =
@@ -252,7 +235,7 @@ async function withdraw() {
   withdrawBtn.disabled = true;
 
   try {
-    const res = await fetch(API + "/withdraw", {
+    const res = await fetch("/withdraw", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
@@ -266,11 +249,9 @@ async function withdraw() {
           wallet: wallet.value,
           whatsapp: whatsapp.value,
           phone: phone.value
-        },
-        initData: tg.initData // SEND initData for Telegram WebApp verification
+        }
       })
     });
-
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Withdrawal failed");
 
@@ -279,17 +260,7 @@ async function withdraw() {
     balanceBox.innerHTML =
       `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
 
-    // Notify admin
-    await fetch(API + "/notify-admin", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        message: `User ${telegramId} completed withdrawal of ₦${Math.round(amountNGN)} via ${methodVal}`
-      })
-    });
-
     withdrawBtn.disabled = true;
-
   } catch (err) {
     showMsg("❌ Withdrawal failed: "+err.message, "error");
     withdrawBtn.disabled = false;
