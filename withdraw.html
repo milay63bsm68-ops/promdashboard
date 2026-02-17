@@ -122,17 +122,14 @@ button:disabled { opacity:0.5; }
     <input id="whatsapp" placeholder="WhatsApp Number">
     <input id="phone" placeholder="Calling Number">
 
-    <button id="withdrawBtn" onclick="withdraw()" disabled>
-      Submit Withdrawal
-    </button>
-
+    <button id="withdrawBtn" disabled>Submit Withdrawal</button>
     <div id="msgBox"></div>
   </div>
 
 </div>
 
 <script>
-const API = "/withdraw"; // POST directly to server
+const API = "/withdraw"; // all calls go through server
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 
@@ -146,22 +143,30 @@ const withdrawBtn = document.getElementById("withdrawBtn");
 const withdrawForm = document.getElementById("withdrawForm");
 const lowBalanceMsg = document.getElementById("lowBalanceMsg");
 
+// Disable form if no Telegram WebApp
+if(!telegramId){
+  userInfo.innerHTML = "❌ Please open this page from the Telegram WebApp.";
+}
+
 let balanceNGN = 0;
 let usdRate = 0;
 
-// Display user info
-userInfo.innerHTML = `
-<b>Name:</b> ${user?.first_name || "N/A"}<br>
-<b>Username:</b> ${user?.username ? "@"+user.username : "N/A"}<br>
-<b>ID:</b> ${telegramId || "N/A"}
-`;
+// Show user info
+if(telegramId){
+  userInfo.innerHTML = `
+  <b>Name:</b> ${user?.first_name || "N/A"}<br>
+  <b>Username:</b> ${user?.username ? "@"+user.username : "N/A"}<br>
+  <b>ID:</b> ${telegramId}
+  `;
+}
 
-function showMsg(text, type="success") {
+// Show message
+function showMsg(text, type="success"){
   msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
 }
 
-// Fetch real USD rate
-async function fetchUsdRate() {
+// Fetch USD rate
+async function fetchUsdRate(){
   try {
     const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
     const data = await res.json();
@@ -169,8 +174,9 @@ async function fetchUsdRate() {
   } catch { return 0.0026; }
 }
 
-// Load user balance from server
-async function loadBalance() {
+// Load balance from server
+async function loadBalance(){
+  if(!telegramId) return;
   showMsg("Loading balance…", "loading");
   try {
     const r = await fetch("/get-balance", {
@@ -180,23 +186,21 @@ async function loadBalance() {
     });
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
-
     usdRate = await fetchUsdRate();
     const usd = balanceNGN * usdRate;
 
-    balanceBox.innerHTML =
-      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${usd.toFixed(2)}`;
+    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${usd.toFixed(2)}`;
 
-    if (balanceNGN < 5000 && usd < 20) {
+    if(balanceNGN < 5000 && usd < 20){
       lowBalanceMsg.classList.remove("hidden");
       withdrawForm.classList.add("hidden");
-    } else {
+    }else{
       withdrawForm.classList.remove("hidden");
       lowBalanceMsg.classList.add("hidden");
       withdrawBtn.disabled = false;
     }
     showMsg("");
-  } catch (err) {
+  }catch(err){
     showMsg("Failed to load balance: "+err.message, "error");
     withdrawForm.classList.add("hidden");
     lowBalanceMsg.classList.add("hidden");
@@ -213,37 +217,38 @@ bank.onchange = () => {
   otherBank.style.display = bank.value==="Other" ? "block" : "none";
 };
 
-// Withdraw function
-async function withdraw() {
+// Withdraw
+withdrawBtn.onclick = async () => {
+  if(!telegramId) return;
   const methodVal = method.value;
-  if (!methodVal) return showMsg("Select withdrawal method", "error");
+  if(!methodVal) return showMsg("Select withdrawal method", "error");
 
   let amountNGN = 0;
-  if (methodVal === "bank") {
+  if(methodVal === "bank"){
     amountNGN = Number(bankAmount.value);
-    if (amountNGN < 5000) return showMsg("Minimum bank withdrawal is ₦5,000", "error");
-    if (amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
+    if(amountNGN < 5000) return showMsg("Minimum bank withdrawal is ₦5,000", "error");
+    if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
   }
-  if (methodVal === "crypto") {
+  if(methodVal === "crypto"){
     const usd = Number(cryptoAmount.value);
-    if (usd < 20) return showMsg("Minimum crypto withdrawal is $20", "error");
+    if(usd < 20) return showMsg("Minimum crypto withdrawal is $20", "error");
     amountNGN = usd / usdRate;
-    if (amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
+    if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
   }
 
   showMsg("Submitting withdrawal…", "loading");
   withdrawBtn.disabled = true;
 
-  try {
-    const res = await fetch("/withdraw", {
+  try{
+    const res = await fetch(API, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
         telegramId,
         method: methodVal,
         amount: Math.round(amountNGN),
-        details: {
-          bank: bank.value==="Other" ? otherBank.value : bank.value,
+        details:{
+          bank: bank.value==="Other"?otherBank.value:bank.value,
           accountName: acctName.value,
           accountNumber: acctNumber.value,
           wallet: wallet.value,
@@ -253,19 +258,17 @@ async function withdraw() {
       })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Withdrawal failed");
+    if(!res.ok) throw new Error(data.error||"Withdrawal failed");
 
     showMsg("✅ Withdrawal submitted successfully!", "success");
     balanceNGN = data.newBalance;
-    balanceBox.innerHTML =
-      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
-
+    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
     withdrawBtn.disabled = true;
-  } catch (err) {
+  }catch(err){
     showMsg("❌ Withdrawal failed: "+err.message, "error");
     withdrawBtn.disabled = false;
   }
-}
+};
 </script>
 
 </body>
