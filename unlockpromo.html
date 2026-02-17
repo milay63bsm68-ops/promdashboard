@@ -146,11 +146,16 @@ const telegramId = user.id;
 const name = user.first_name || "Guest";
 const username = user.username ? "@"+user.username : "No username";
 
+// Show user info
 document.getElementById("userInfo").innerHTML = `
 <b>Name:</b> ${name}<br>
 <b>Username:</b> ${username}<br>
-<b>ID:</b> ${telegramId}
+<b>ID:</b> ${telegramId || "Not available"}
 `;
+
+// Log for debugging
+console.log("User Info:", { telegramId, name, username });
+console.log("Backend URL:", BACKEND);
 
 function showTask(){
   taskBox.classList.remove("hidden");
@@ -194,7 +199,11 @@ function updatePaymentAddress(){
 }
 
 function copyText(text){
-  navigator.clipboard.writeText(text).then(()=>{ alert("Copied successfully ✅"); });
+  navigator.clipboard.writeText(text).then(()=>{ 
+    tg.showAlert("Copied successfully ✅");
+  }).catch(()=>{
+    alert("Copied: " + text);
+  });
 }
 
 function toBase64(file){
@@ -207,44 +216,77 @@ function toBase64(file){
 
 async function submitTask(){
   const files = taskShot.files;
+  
+  if(!telegramId){
+    taskStatus.innerHTML = "❌ Telegram ID not found. Please open this from Telegram.";
+    return;
+  }
+  
   if(!files.length){
     taskStatus.innerHTML = "❌ Upload at least one screenshot";
     return;
   }
+  
   taskStatus.innerHTML = "⏳ Sending task...";
+  
   try{
+    let successCount = 0;
     for(let f of files){
       const image = await toBase64(f);
       const payload = {
         telegramId,
         name,
         username,
-        method: "",
-        whatsapp: taskWhatsapp.value,
-        call: taskCall.value,
+        method: "Task",
+        whatsapp: taskWhatsapp.value || "N/A",
+        call: taskCall.value || "N/A",
         image,
         type: "task"
       };
-      await fetch(BACKEND+"/unlock-promo", {
+      
+      console.log("Sending task payload:", { ...payload, image: "base64_data_hidden" });
+      
+      const response = await fetch(BACKEND+"/unlock-promo", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify(payload)
       });
+      
+      const result = await response.json();
+      console.log("Server response:", result);
+      
+      if(response.ok){
+        successCount++;
+      } else {
+        throw new Error(result.error || "Failed to send");
+      }
     }
-    taskStatus.innerHTML = "✅ Task sent for review";
+    
+    taskStatus.innerHTML = `✅ ${successCount} screenshot(s) sent for review`;
+    tg.showAlert("✅ Task submitted successfully!");
+    
   }catch(err){
-    console.error(err);
-    taskStatus.innerHTML = "❌ Error sending task: " + err.message;
+    console.error("Error submitting task:", err);
+    taskStatus.innerHTML = "❌ Error: " + err.message;
+    tg.showAlert("❌ Failed to submit. Please try again.");
   }
 }
 
 async function submitPayment(){
   const file = payShot.files[0];
+  
+  if(!telegramId){
+    payStatus.innerHTML = "❌ Telegram ID not found. Please open this from Telegram.";
+    return;
+  }
+  
   if(!file || !payMethod.value){
     payStatus.innerHTML = "❌ Select method & upload proof";
     return;
   }
+  
   payStatus.innerHTML = "⏳ Sending payment...";
+  
   try{
     const image = await toBase64(file);
     const payload = {
@@ -252,20 +294,34 @@ async function submitPayment(){
       name,
       username,
       method: payMethod.value,
-      whatsapp: payWhatsapp.value,
-      call: payCall.value,
+      whatsapp: payWhatsapp.value || "N/A",
+      call: payCall.value || "N/A",
       image,
       type: "payment"
     };
-    await fetch(BACKEND+"/unlock-promo", {
+    
+    console.log("Sending payment payload:", { ...payload, image: "base64_data_hidden" });
+    
+    const response = await fetch(BACKEND+"/unlock-promo", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify(payload)
     });
-    payStatus.innerHTML = "✅ Payment sent for review";
+    
+    const result = await response.json();
+    console.log("Server response:", result);
+    
+    if(response.ok){
+      payStatus.innerHTML = "✅ Payment sent for review";
+      tg.showAlert("✅ Payment submitted successfully!");
+    } else {
+      throw new Error(result.error || "Failed to send");
+    }
+    
   }catch(err){
-    console.error(err);
-    payStatus.innerHTML = "❌ Error sending payment: " + err.message;
+    console.error("Error submitting payment:", err);
+    payStatus.innerHTML = "❌ Error: " + err.message;
+    tg.showAlert("❌ Failed to submit. Please try again.");
   }
 }
 </script>
