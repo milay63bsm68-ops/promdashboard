@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
+import FormData from "form-data";
 
 dotenv.config();
 
@@ -13,7 +14,7 @@ app.use(express.json({ limit: "25mb" }));
 
 /* =========================
    ENV VARIABLES
-   ========================= */
+========================= */
 const {
   BOT_TOKEN,
   ADMIN_ID,
@@ -24,8 +25,8 @@ const {
 } = process.env;
 
 /* =========================
-   HELPERS
-   ========================= */
+   ADMIN AUTH
+========================= */
 function authAdmin(req, res) {
   const pass = req.headers["x-admin-password"];
   if (!pass || pass !== ADMIN_PASSWORD) {
@@ -35,29 +36,31 @@ function authAdmin(req, res) {
   return true;
 }
 
-// Send Telegram message or photo
+/* =========================
+   SEND TELEGRAM MESSAGE OR PHOTO
+========================= */
 async function sendTelegram(text, imageBase64 = null, chatId = ADMIN_ID) {
   if (!BOT_TOKEN || !chatId) return;
 
   try {
     if (imageBase64) {
+      // Telegram photo must be sent via multipart/form-data
+      const form = new FormData();
+      const base64 = imageBase64.split(",")[1];
+      const buffer = Buffer.from(base64, "base64");
+      form.append("chat_id", chatId);
+      form.append("caption", text);
+      form.append("photo", buffer, { filename: "image.png" });
+
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          caption: text,
-          photo: imageBase64
-        })
+        body: form
       });
     } else {
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text
-        })
+        body: JSON.stringify({ chat_id: chatId, text })
       });
     }
   } catch (err) {
@@ -67,7 +70,7 @@ async function sendTelegram(text, imageBase64 = null, chatId = ADMIN_ID) {
 
 /* =========================
    GITHUB BALANCE FUNCTIONS
-   ========================= */
+========================= */
 async function readBalances() {
   try {
     const r = await fetch(
@@ -86,16 +89,16 @@ async function readBalances() {
 }
 
 async function updateBalancesOnGitHub(balances, sha, message = "Update balances") {
-  if (!sha) {
-    console.warn("GitHub SHA missing. Skipping update.");
-    return false;
-  }
+  if (!sha) return false;
   const content = "window.USER_BALANCES = " + JSON.stringify(balances, null, 2);
-  const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`, {
-    method: "PUT",
-    headers: { Authorization: `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ message, content: Buffer.from(content).toString("base64"), sha })
-  });
+  const res = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${BALANCE_FILE}`,
+    {
+      method: "PUT",
+      headers: { Authorization: `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ message, content: Buffer.from(content).toString("base64"), sha })
+    }
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`GitHub update failed: ${res.status} - ${text}`);
@@ -105,7 +108,7 @@ async function updateBalancesOnGitHub(balances, sha, message = "Update balances"
 
 /* =========================
    USER BALANCE
-   ========================= */
+========================= */
 app.post("/get-balance", async (req, res) => {
   const { telegramId } = req.body;
   if (!telegramId) return res.json({ ngn: 0 });
@@ -121,10 +124,9 @@ app.post("/get-balance", async (req, res) => {
 
 /* =========================
    ADMIN – LOAD BALANCE
-   ========================= */
+========================= */
 app.post("/admin/get-balance", async (req, res) => {
   if (!authAdmin(req, res)) return;
-
   const { telegramId } = req.body;
   if (!telegramId) return res.status(400).json({ error: "Missing Telegram ID" });
 
@@ -139,10 +141,9 @@ app.post("/admin/get-balance", async (req, res) => {
 
 /* =========================
    ADMIN – DEPOSIT / WITHDRAW
-   ========================= */
+========================= */
 app.post("/admin/update-balance", async (req, res) => {
   if (!authAdmin(req, res)) return;
-
   const { telegramId, amount, type } = req.body;
   if (!telegramId || !amount || !type)
     return res.status(400).json({ error: "Invalid request" });
@@ -169,6 +170,13 @@ Amount: ₦${amount.toLocaleString()}
 New Balance: ₦${balances[telegramId].ngn.toLocaleString()}`
     );
 
+    // Notify user
+    await sendTelegram(
+      `✅ Your balance has been ${type === "deposit" ? "credited" : "debited"} by ₦${amount.toLocaleString()}. New balance: ₦${balances[telegramId].ngn.toLocaleString()}`,
+      null,
+      telegramId
+    );
+
     res.json({ newBalance: balances[telegramId].ngn });
   } catch (err) {
     console.error("Admin update error:", err.message);
@@ -178,7 +186,7 @@ New Balance: ₦${balances[telegramId].ngn.toLocaleString()}`
 
 /* =========================
    USER WITHDRAW
-   ========================= */
+========================= */
 app.post("/withdraw", async (req, res) => {
   const { telegramId, amount, method, details } = req.body;
   if (!telegramId || !amount || !method)
@@ -219,7 +227,7 @@ Details: ${JSON.stringify(details, null, 2)}`
 
 /* =========================
    ADMIN NOTIFY (TEXT)
-   ========================= */
+========================= */
 app.post("/notify-admin", async (req, res) => {
   const { message } = req.body;
   await sendTelegram(message);
@@ -228,7 +236,7 @@ app.post("/notify-admin", async (req, res) => {
 
 /* =========================
    ADMIN NOTIFY (IMAGE)
-   ========================= */
+========================= */
 app.post("/notify-admin-image", async (req, res) => {
   const { message, image } = req.body;
   await sendTelegram(message, image);
@@ -237,7 +245,7 @@ app.post("/notify-admin-image", async (req, res) => {
 
 /* =========================
    START SERVER
-   ========================= */
+========================= */
 app.listen(PORT, () => {
   console.log("API running on port " + PORT);
 });
