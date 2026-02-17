@@ -266,7 +266,8 @@ async function withdraw() {
           wallet: wallet.value,
           whatsapp: whatsapp.value,
           phone: phone.value
-        }
+        },
+        initData: tg.initData // SEND initData for Telegram WebApp verification
       })
     });
 
