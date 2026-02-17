@@ -83,13 +83,16 @@ input, select {
     <b>🏦 Bank:</b> 9114301708 (Opay)<br>
     <b>💰 BNB (BEP20):</b><br>
     <small>0xbBcc409872bC2441400735624638F3D67DAa7C4C</small>
+
     <input id="payWhatsapp" placeholder="WhatsApp number">
     <input id="payCall" placeholder="Calling number">
+
     <select id="payMethod">
       <option value="">Select method</option>
       <option>Bank Transfer</option>
       <option>BNB (BEP20)</option>
     </select>
+
     <input type="file" accept="image/*" id="payShot">
     <button class="secondary" onclick="submitPayment()">Submit Payment</button>
     <div class="status" id="payStatus"></div>
@@ -101,102 +104,132 @@ input, select {
 const tg = Telegram.WebApp;
 tg.ready();
 
-const BACKEND = "https://promdashboard.onrender.com";
-const user = tg.initDataUnsafe?.user || {};
+/* 🔗 BACKEND (UNLOCKPROMO ROUTE) */
+const BACKEND = "https://promdashboard.onrender.com/unlockpromo";
 
+const user = tg.initDataUnsafe?.user || {};
 const telegramId = user.id;
 const name = user.first_name || "Guest";
-const username = user.username ? "@"+user.username : "No username";
+const username = user.username ? "@" + user.username : "No username";
 
+/* ELEMENTS */
 const userInfo = document.getElementById("userInfo");
 const taskBox = document.getElementById("taskBox");
 const purchaseBox = document.getElementById("purchaseBox");
 const taskStatus = document.getElementById("taskStatus");
 const payStatus = document.getElementById("payStatus");
 
+const taskWhatsapp = document.getElementById("taskWhatsapp");
+const taskCall = document.getElementById("taskCall");
+
+const payWhatsapp = document.getElementById("payWhatsapp");
+const payCall = document.getElementById("payCall");
+const payMethod = document.getElementById("payMethod");
+
+/* USER INFO */
 userInfo.innerHTML = `
 <b>Name:</b> ${name}<br>
 <b>Username:</b> ${username}<br>
 <b>ID:</b> ${telegramId}
 `;
 
+/* UI SWITCH */
 function showTask(){
   taskBox.classList.remove("hidden");
   purchaseBox.classList.add("hidden");
   taskStatus.innerHTML = "";
 }
+
 function showPurchase(){
   purchaseBox.classList.remove("hidden");
   taskBox.classList.add("hidden");
   payStatus.innerHTML = "";
 }
 
+/* BASE64 */
 function toBase64(file){
   return new Promise(resolve=>{
     const fr = new FileReader();
-    fr.onload = ()=>resolve(fr.result);
+    fr.onload = () => resolve(fr.result);
     fr.readAsDataURL(file);
   });
 }
 
+/* SUBMIT TASK */
 async function submitTask(){
   const files = document.getElementById("taskShot").files;
+
   if(!files.length){
     taskStatus.innerHTML = "❌ Upload at least one screenshot";
     return;
   }
+
   taskStatus.innerHTML = "⏳ Sending task...";
+
   try{
-    for(let f of files){
+    for(const f of files){
       const image = await toBase64(f);
-      const message =
-`🟢 PROMO TASK SUBMISSION
+      const message = `🟢 PROMO TASK SUBMISSION
 Name: ${name}
 Username: ${username}
 ID: ${telegramId}
 WhatsApp: ${taskWhatsapp.value}
 Call: ${taskCall.value}`;
-      await fetch(BACKEND+"/notify-admin-image", {
+
+      await fetch(BACKEND + "/submit", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ message, image, telegramId })
       });
     }
+
     taskStatus.innerHTML = "✅ Task sent for review";
-    tg.close();
+    setTimeout(() => tg.close(), 1200);
+
   }catch(err){
-    taskStatus.innerHTML = "❌ Error sending task";
     console.error(err);
+    taskStatus.innerHTML = "❌ Error sending task";
   }
 }
 
+/* SUBMIT PAYMENT */
 async function submitPayment(){
   const file = document.getElementById("payShot").files[0];
+
   if(!file){
     payStatus.innerHTML = "❌ Upload payment proof";
     return;
   }
+
+  if(!payMethod.value){
+    payStatus.innerHTML = "❌ Select payment method";
+    return;
+  }
+
   payStatus.innerHTML = "⏳ Sending payment...";
+
   try{
     const image = await toBase64(file);
-    const message =
-`🟡 PROMO PAYMENT
+    const message = `🟡 PROMO PAYMENT
 Name: ${name}
 Username: ${username}
 ID: ${telegramId}
 Method: ${payMethod.value}
 WhatsApp: ${payWhatsapp.value}
 Call: ${payCall.value}`;
-    await fetch(BACKEND+"/notify-admin-image", {
+
+    await fetch(BACKEND + "/submit", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ message, image, telegramId })
     });
+
     payStatus.innerHTML = "✅ Payment sent for confirmation";
-    tg.close();
+    setTimeout(() => tg.close(), 1200);
+
   }catch(err){
-    payStatus.innerHTML = "❌ Error sending payment";
     console.error(err);
+    payStatus.innerHTML = "❌ Error sending payment";
   }
 }
 </script>
