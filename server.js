@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
+import crypto from "crypto"; // added for Telegram WebApp verification
 
 dotenv.config();
 
@@ -177,23 +178,44 @@ Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`
    USER WITHDRAW
 ========================= */
 app.post("/withdraw", async (req, res) => {
-  const { telegramId, amount, method, details } = req.body;
-  if (!telegramId || !amount || !method)
+  const { telegramId, amount, method, details, initData } = req.body;
+  if (!telegramId || !amount || !method || !initData)
     return res.status(400).json({ error: "Invalid withdrawal request" });
 
   try {
+    // ===== VERIFY TELEGRAM WEBAPP =====
+    const secretKey = crypto.createHash("sha256").update(BOT_TOKEN).digest();
+
+    const dataCheckArr = initData
+      .split("&")
+      .map(pair => pair.split("="))
+      .map(([k, v]) => [k, decodeURIComponent(v)])
+      .sort(([a], [b]) => a.localeCompare(b));
+
+    const dataCheckString = dataCheckArr.map(([k, v]) => `${k}=${v}`).join("\n");
+    const hmac = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+
+    const params = Object.fromEntries(dataCheckArr);
+    if (hmac !== params.hash)
+      return res.status(403).json({ error: "Withdrawal must be from Telegram WebApp" });
+
+    // ===== ENSURE USER ID MATCHES =====
+    const telegramUserId = Number(params.user_id || params.user.id);
+    if (telegramId !== telegramUserId)
+      return res.status(403).json({ error: "You can only withdraw from your own account" });
+
+    // ===== PROCESS BALANCE =====
     const { balances, sha } = await readBalances();
     if (!balances[telegramId]) balances[telegramId] = { ngn: 0 };
 
-    const prevBalance = balances[telegramId].ngn; // balance before withdrawal
-
+    const prevBalance = balances[telegramId].ngn;
     if (prevBalance < amount)
       return res.status(400).json({ error: "Insufficient balance" });
 
-    balances[telegramId].ngn -= amount; // subtract amount
+    balances[telegramId].ngn -= amount;
     await updateBalancesOnGitHub(balances, sha, `User withdrawal: ${telegramId}`);
 
-    // Notify admin
+    // ===== NOTIFY ADMIN =====
     await sendTelegram(
       `💸 WITHDRAW REQUEST
 User: ${telegramId}
@@ -204,7 +226,7 @@ Balance After: ₦${balances[telegramId].ngn.toLocaleString()}
 Details: ${JSON.stringify(details, null, 2)}`
     );
 
-    // Notify user
+    // ===== NOTIFY USER =====
     await sendTelegram(
       `✅ Your withdrawal request of ₦${amount.toLocaleString()} has been submitted and is pending admin approval.`,
       telegramId
