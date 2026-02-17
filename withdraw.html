@@ -9,42 +9,12 @@
 
 <style>
 * { box-sizing: border-box; }
-body {
-  background:#020617;
-  color:white;
-  font-family:Arial, sans-serif;
-  padding:14px;
-  margin:0;
-}
+body { background:#020617; color:white; font-family:Arial, sans-serif; padding:14px; margin:0; }
 .container { max-width:420px; margin:0 auto; }
-.card {
-  background:#0f172a;
-  padding:14px;
-  border-radius:14px;
-  margin-bottom:12px;
-}
+.card { background:#0f172a; padding:14px; border-radius:14px; margin-bottom:12px; }
 h3 { margin:0 0 8px 0; font-size:14px; }
-input, select {
-  width:100%;
-  padding:10px;
-  margin-top:6px;
-  border-radius:10px;
-  border:none;
-  background:#020617;
-  color:white;
-  font-size:14px;
-  height:50px;
-}
-button {
-  width:100%;
-  padding:12px;
-  margin-top:12px;
-  border:none;
-  border-radius:12px;
-  background:#3b82f6;
-  color:white;
-  font-weight:bold;
-}
+input, select { width:100%; padding:10px; margin-top:6px; border-radius:10px; border:none; background:#020617; color:white; font-size:14px; height:50px; }
+button { width:100%; padding:12px; margin-top:12px; border:none; border-radius:12px; background:#3b82f6; color:white; font-weight:bold; }
 button:disabled { opacity:0.5; }
 .msg { margin-top:10px; padding:8px; border-radius:8px; font-size:13px; }
 .error { background:#ef4444; }
@@ -56,7 +26,6 @@ button:disabled { opacity:0.5; }
 </head>
 
 <body>
-
 <div class="container">
 
   <div class="card" id="userInfo">Loading user…</div>
@@ -71,7 +40,6 @@ button:disabled { opacity:0.5; }
   </div>
 
   <div class="card hidden" id="withdrawForm">
-
     <h3>Withdrawal Method</h3>
     <select id="method">
       <option value="">Select method</option>
@@ -128,11 +96,22 @@ const lowBalanceMsg = document.getElementById("lowBalanceMsg");
 const msgBox = document.getElementById("msgBox");
 const withdrawBtn = document.getElementById("withdrawBtn");
 
+const method = document.getElementById("method");
+const bank = document.getElementById("bank");
+const otherBank = document.getElementById("otherBank");
+const bankAmount = document.getElementById("bankAmount");
+const cryptoAmount = document.getElementById("cryptoAmount");
+const wallet = document.getElementById("wallet");
+const acctName = document.getElementById("acctName");
+const acctNumber = document.getElementById("acctNumber");
+const whatsapp = document.getElementById("whatsapp");
+const phone = document.getElementById("phone");
+
 let balanceNGN = 0;
 let usdRate = 0.0026;
 
 if(!initData){
-  userInfo.innerHTML = "❌ Open this page inside Telegram.";
+  userInfo.innerHTML = "❌ Open this page inside Telegram WebApp.";
 }
 
 if(user){
@@ -159,42 +138,47 @@ async function loadBalance(){
   if(!initData) return;
   showMsg("Loading balance…","loading");
 
-  const r = await fetch("/get-balance",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ initData })
-  });
+  try{
+    const res = await fetch("/get-balance",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ initData })
+    });
 
-  const d = await r.json();
-  balanceNGN = d.ngn || 0;
+    const data = await res.json();
+    balanceNGN = data.ngn || 0;
 
-  await fetchUsdRate();
+    await fetchUsdRate();
 
-  balanceBox.innerHTML =
-    `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+    balanceBox.innerHTML =
+      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
 
-  if(balanceNGN < 5000 && balanceNGN*usdRate < 20){
-    lowBalanceMsg.classList.remove("hidden");
-    withdrawForm.classList.add("hidden");
-  }else{
-    withdrawForm.classList.remove("hidden");
-    lowBalanceMsg.classList.add("hidden");
+    if(balanceNGN < 5000 && balanceNGN*usdRate < 20){
+      lowBalanceMsg.classList.remove("hidden");
+      withdrawForm.classList.add("hidden");
+    }else{
+      withdrawForm.classList.remove("hidden");
+      lowBalanceMsg.classList.add("hidden");
+    }
+
+    showMsg("");
+  }catch(err){
+    showMsg("Failed to load balance","error");
   }
-
-  showMsg("");
 }
 
 loadBalance();
 
+// Show/hide fields
 method.onchange = () => {
   bankFields.classList.toggle("hidden", method.value !== "bank");
   cryptoFields.classList.toggle("hidden", method.value !== "crypto");
 };
-
 bank.onchange = () => {
   otherBank.classList.toggle("hidden", bank.value !== "Other");
 };
 
+// Withdraw
 withdrawBtn.onclick = async () => {
   const m = method.value;
   if(!m) return showMsg("Select withdrawal method","error");
@@ -234,11 +218,11 @@ withdrawBtn.onclick = async () => {
       })
     });
 
-    const d = await res.json();
-    if(!res.ok) throw new Error(d.error);
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
 
     showMsg("✅ Withdrawal submitted","success");
-    balanceNGN = d.newBalance;
+    balanceNGN = data.newBalance;
     balanceBox.innerHTML =
       `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
   }catch(err){
@@ -247,6 +231,5 @@ withdrawBtn.onclick = async () => {
   }
 };
 </script>
-
 </body>
 </html>
