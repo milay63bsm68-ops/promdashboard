@@ -83,6 +83,11 @@ button:disabled { opacity:0.5; }
 </div>
 
 <script>
+// Telegram WebApp init
+const tg = window.Telegram?.WebApp;
+tg?.ready();
+const initData = tg?.initData;
+
 const userInfo = document.getElementById("userInfo");
 const balanceBox = document.getElementById("balanceBox");
 const withdrawForm = document.getElementById("withdrawForm");
@@ -121,24 +126,20 @@ async function fetchUsdRate(){
   }catch{}
 }
 
-// Load balance
+// Load balance from server
 async function loadBalance(){
   showMsg("Loading balance…","loading");
-
   try{
     const res = await fetch("/get-balance",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({})
+      body: JSON.stringify({ initData })
     });
-
     const data = await res.json();
     balanceNGN = data.ngn || 0;
 
     await fetchUsdRate();
-
-    balanceBox.innerHTML =
-      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
 
     if(balanceNGN < 5000 && balanceNGN*usdRate < 20){
       lowBalanceMsg.classList.remove("hidden");
@@ -147,6 +148,11 @@ async function loadBalance(){
       withdrawForm.classList.remove("hidden");
       lowBalanceMsg.classList.add("hidden");
     }
+
+    // Show user info
+    userInfo.innerHTML = `<b>ID:</b> ${tg.initDataUnsafe.user.id}<br>
+                          <b>Name:</b> ${tg.initDataUnsafe.user.first_name}<br>
+                          <b>Username:</b> ${tg.initDataUnsafe.user.username || "N/A"}`;
 
     showMsg("");
   }catch(err){
@@ -174,9 +180,8 @@ generatePasscodeBtn.onclick = async () => {
     const res = await fetch("/generate-passcode",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({})
+      body: JSON.stringify({ initData })
     });
-
     const data = await res.json();
     if(!res.ok) throw new Error(data.error);
 
@@ -195,12 +200,12 @@ withdrawBtn.onclick = async () => {
   if(!m) return showMsg("Select withdrawal method","error");
 
   let amount = 0;
-  if(m === "bank"){
+  if(m==="bank"){ 
     amount = Number(bankAmount.value);
     if(amount < 5000) return showMsg("Minimum ₦5,000","error");
     if(amount > balanceNGN) return showMsg("Insufficient balance","error");
   }
-  if(m === "crypto"){
+  if(m==="crypto"){
     amount = Number(cryptoAmount.value);
     if(amount < 20) return showMsg("Minimum $20","error");
   }
@@ -216,6 +221,7 @@ withdrawBtn.onclick = async () => {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
+        initData,
         method: m,
         amount,
         passcode,
@@ -235,8 +241,7 @@ withdrawBtn.onclick = async () => {
 
     showMsg("✅ Withdrawal submitted","success");
     balanceNGN = data.newBalance;
-    balanceBox.innerHTML =
-      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
   }catch(err){
     showMsg(err.message,"error");
     withdrawBtn.disabled = false;
