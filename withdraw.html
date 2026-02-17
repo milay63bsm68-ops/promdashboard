@@ -34,6 +34,7 @@ input, select {
   background:#020617;
   color:white;
   font-size:14px;
+  height: 25px;
 }
 button {
   width:100%;
@@ -104,7 +105,7 @@ button:disabled { opacity:0.5; }
       </select>
       <input id="otherBank" placeholder="Other bank name" class="hidden">
       <input id="acctName" placeholder="Account Name">
-      <input id="acctNumber" placeholder="Account Number">
+      <input type="number" id="acctNumber" placeholder="Account Number">
       <input id="bankAmount" type="number" placeholder="Amount (₦)">
       <div class="small">Minimum: ₦5,000</div>
     </div>
@@ -119,8 +120,8 @@ button:disabled { opacity:0.5; }
 
     <!-- CONTACT -->
     <h3 style="margin-top:10px">Contact Details</h3>
-    <input id="whatsapp" placeholder="WhatsApp Number">
-    <input id="phone" placeholder="Calling Number">
+    <input type="tel" id="whatsapp" placeholder="WhatsApp Number">
+    <input type="tel" id="phone" placeholder="Calling Number">
 
     <button id="withdrawBtn" disabled>Submit Withdrawal</button>
     <div id="msgBox"></div>
