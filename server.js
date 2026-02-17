@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
+import FormData from "form-data"; // <-- added
 
 dotenv.config();
 
@@ -38,18 +39,38 @@ async function sendTelegram(text, chatId){
   });
 }
 
-async function sendTelegramPhoto(chatId, caption, base64Image){
-  if(!BOT_TOKEN || !chatId) return;
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      chat_id: Number(chatId),
-      photo: base64Image,
-      caption: caption,
-      parse_mode: "HTML"
-    })
-  });
+// ✅ Updated function: use FormData for sending images properly
+async function sendTelegramPhoto(chatId, caption, base64Image, retries = 1) {
+  if (!BOT_TOKEN || !chatId) return { ok: false, error: "Missing BOT_TOKEN or chatId" };
+
+  try {
+    const base64Data = base64Image.split(",")[1]; // remove prefix
+    const buffer = Buffer.from(base64Data, "base64");
+
+    const form = new FormData();
+    form.append("chat_id", chatId);
+    form.append("caption", caption);
+    form.append("parse_mode", "HTML");
+    form.append("photo", buffer, { filename: "submission.png" });
+
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: "POST",
+      body: form
+    });
+
+    const result = await res.json();
+    if (!result.ok) {
+      console.error("Telegram sendPhoto failed:", result);
+      if (retries > 0) {
+        console.log("Retrying sendPhoto...");
+        return sendTelegramPhoto(chatId, caption, base64Image, retries - 1);
+      }
+    }
+    return result;
+  } catch (err) {
+    console.error("Error in sendTelegramPhoto:", err);
+    return { ok: false, error: err.message };
+  }
 }
 
 /* =========================
@@ -267,13 +288,14 @@ Call: ${call || "-"}
 `;
 
   try{
-    // Send to admin
-    await sendTelegramPhoto(ADMIN_ID, caption, image);
+    // ✅ Send image + caption properly using FormData
+    const adminResult = await sendTelegramPhoto(ADMIN_ID, caption, image);
+    console.log("Admin result:", adminResult);
 
-    // Notify user
+    // Notify user with plain text
     await sendTelegram(`✅ Your ${type} submission has been received.\nThe admin will review it and approve soon.`, telegramId);
 
-    res.json({success:true, message:"Sent to admin and user notified"});
+    res.json({success:true, message:"Sent to admin and user notified", adminResult});
   }catch(err){
     console.error(err);
     res.status(500).json({error:"Failed to send submission"});
