@@ -27,7 +27,7 @@ const {
 } = process.env;
 
 /* =========================
-   TELEGRAM SEND FUNCTION
+   TELEGRAM SEND FUNCTIONS
 ========================= */
 async function sendTelegram(text, chatId){
   if(!BOT_TOKEN || !chatId) return;
@@ -35,6 +35,20 @@ async function sendTelegram(text, chatId){
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ chat_id:Number(chatId), text })
+  });
+}
+
+async function sendTelegramPhoto(chatId, caption, base64Image){
+  if(!BOT_TOKEN || !chatId) return;
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      chat_id: Number(chatId),
+      photo: base64Image,
+      caption: caption,
+      parse_mode: "HTML"
+    })
   });
 }
 
@@ -122,7 +136,6 @@ app.post("/generate-passcode", async (req,res)=>{
   passcodes[telegramId] = { passcode, expiresAt };
   attempts[telegramId] = 0; // reset attempts on new passcode
 
-  // Send passcode to Telegram with strong warning
   const message = `💳 Your withdrawal passcode is: ${passcode}\n\n` +
     `⚠️ IMPORTANT: Never share this passcode with anyone.\n` +
     `✅ Use it ONLY in the trusted Telegram bot or web app @intelpremiumbot.\n` +
@@ -142,21 +155,18 @@ app.post("/withdraw", async (req,res)=>{
 
   const record = passcodes[telegramId];
 
-  // Validate passcode
   if(!record || record.passcode !== passcode || record.expiresAt < Date.now()){
     attempts[telegramId] = (attempts[telegramId] || 0) + 1;
-
     if(attempts[telegramId] >= 3){
       delete passcodes[telegramId];
       attempts[telegramId] = 0;
       return res.status(400).json({ error:"Too many failed attempts. Passcode reset." });
     }
-
     return res.status(400).json({ error:"Invalid or expired passcode" });
   }
 
-  attempts[telegramId] = 0; // reset attempts on success
-  delete passcodes[telegramId]; // delete after use
+  attempts[telegramId] = 0;
+  delete passcodes[telegramId];
 
   const safeAmount = Number(amount);
   if(!safeAmount || safeAmount <= 0) return res.status(400).json({ error:"Invalid amount" });
@@ -182,7 +192,6 @@ app.post("/withdraw", async (req,res)=>{
 
   await updateBalances(balances, sha, `Withdraw ${telegramId}`);
 
-  // Notify admin
   await sendTelegram(`💸 WITHDRAW REQUEST
 User: ${telegramId}
 Method: ${method}
@@ -191,7 +200,6 @@ Before: ₦${before.toLocaleString()}
 After: ₦${balances[telegramId].ngn.toLocaleString()}
 Details: ${JSON.stringify(details,null,2)}`, ADMIN_ID);
 
-  // Notify user
   await sendTelegram(`✅ Withdrawal request received.\nAmount: ₦${amountNGN.toLocaleString()}`, telegramId);
 
   res.json({ newBalance: balances[telegramId].ngn });
@@ -236,6 +244,40 @@ Balance Before: ₦${prev.toLocaleString()}
 Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`, ADMIN_ID);
 
   res.json({ newBalance: balances[telegramId].ngn });
+});
+
+/* =========================
+   UNLOCK PROMO ENDPOINT
+========================= */
+app.post("/unlock-promo", async (req,res)=>{
+  const { telegramId, name, username, method, whatsapp, call, image, type } = req.body;
+
+  if(!telegramId || !image || !type){
+    return res.status(400).json({error:"Missing required fields"});
+  }
+
+  const caption = `
+<b>🟢 New ${type === "task" ? "Task" : "Payment"} Submission</b>
+Name: ${name}
+Username: ${username}
+ID: ${telegramId}
+Method: ${method || "-"}
+WhatsApp: ${whatsapp || "-"}
+Call: ${call || "-"}
+`;
+
+  try{
+    // Send to admin
+    await sendTelegramPhoto(ADMIN_ID, caption, image);
+
+    // Notify user
+    await sendTelegram(`✅ Your ${type} submission has been received.\nThe admin will review it and approve soon.`, telegramId);
+
+    res.json({success:true, message:"Sent to admin and user notified"});
+  }catch(err){
+    console.error(err);
+    res.status(500).json({error:"Failed to send submission"});
+  }
 });
 
 /* =========================
