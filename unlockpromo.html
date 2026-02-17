@@ -139,7 +139,7 @@ input, select {
 const tg = Telegram.WebApp;
 tg.ready();
 
-const BACKEND = "https://promo-oz59.onrender.com"; // Updated backend link
+const BACKEND = "https://promo-oz59.onrender.com";
 const user = tg.initDataUnsafe?.user || {};
 
 const telegramId = user.id;
@@ -232,10 +232,9 @@ async function submitTask(){
       });
     }
     taskStatus.innerHTML = "✅ Task sent for review";
-    tg.close();
   }catch(err){
     console.error(err);
-    taskStatus.innerHTML = "❌ Error sending task";
+    taskStatus.innerHTML = "❌ Error sending task: " + err.message;
   }
 }
 
@@ -264,10 +263,9 @@ async function submitPayment(){
       body: JSON.stringify(payload)
     });
     payStatus.innerHTML = "✅ Payment sent for review";
-    tg.close();
   }catch(err){
     console.error(err);
-    payStatus.innerHTML = "❌ Error sending payment";
+    payStatus.innerHTML = "❌ Error sending payment: " + err.message;
   }
 }
 </script>
