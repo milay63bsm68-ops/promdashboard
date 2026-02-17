@@ -88,6 +88,7 @@ function authAdmin(req,res){
    PASSCODE STORAGE
 ========================= */
 const passcodes = {}; // { telegramId: { passcode, expiresAt } }
+const attempts = {};  // { telegramId: number }
 
 /* =========================
    SERVE FILES
@@ -119,9 +120,15 @@ app.post("/generate-passcode", async (req,res)=>{
   const expiresAt = Date.now() + 5*60*1000; // 5 minutes
 
   passcodes[telegramId] = { passcode, expiresAt };
+  attempts[telegramId] = 0; // reset attempts on new passcode
 
-  // Send passcode to Telegram
-  await sendTelegram(`💳 Your withdrawal passcode is: ${passcode}`, telegramId);
+  // Send passcode to Telegram with strong warning
+  const message = `💳 Your withdrawal passcode is: ${passcode}\n\n` +
+    `⚠️ IMPORTANT: Never share this passcode with anyone.\n` +
+    `✅ Use it ONLY in the trusted Telegram bot or web app @intelpremiumbot.\n` +
+    `⏳ This passcode will expire in 5 minutes.`;
+
+  await sendTelegram(message, telegramId);
 
   res.json({ success:true, message:"Passcode sent to your Telegram bot" });
 });
@@ -133,11 +140,23 @@ app.post("/withdraw", async (req,res)=>{
   const { telegramId, method, amount, details, passcode } = req.body;
   if(!telegramId) return res.status(400).json({ error:"Missing Telegram ID" });
 
-  // Validate passcode
   const record = passcodes[telegramId];
+
+  // Validate passcode
   if(!record || record.passcode !== passcode || record.expiresAt < Date.now()){
+    attempts[telegramId] = (attempts[telegramId] || 0) + 1;
+
+    if(attempts[telegramId] >= 3){
+      delete passcodes[telegramId];
+      attempts[telegramId] = 0;
+      return res.status(400).json({ error:"Too many failed attempts. Passcode reset." });
+    }
+
     return res.status(400).json({ error:"Invalid or expired passcode" });
   }
+
+  attempts[telegramId] = 0; // reset attempts on success
+  delete passcodes[telegramId]; // delete after use
 
   const safeAmount = Number(amount);
   if(!safeAmount || safeAmount <= 0) return res.status(400).json({ error:"Invalid amount" });
@@ -174,9 +193,6 @@ Details: ${JSON.stringify(details,null,2)}`, ADMIN_ID);
 
   // Notify user
   await sendTelegram(`✅ Withdrawal request received.\nAmount: ₦${amountNGN.toLocaleString()}`, telegramId);
-
-  // Delete passcode
-  delete passcodes[telegramId];
 
   res.json({ newBalance: balances[telegramId].ngn });
 });
