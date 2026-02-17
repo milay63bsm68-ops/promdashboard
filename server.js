@@ -40,15 +40,8 @@ function verifyTelegram(initData) {
       .map(([k,v]) => `${k}=${v}`)
       .join("\n");
 
-    const secret = crypto
-      .createHash("sha256")
-      .update(BOT_TOKEN)
-      .digest();
-
-    const hmac = crypto
-      .createHmac("sha256", secret)
-      .update(dataCheckString)
-      .digest("hex");
+    const secret = crypto.createHash("sha256").update(BOT_TOKEN).digest();
+    const hmac = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
 
     if (hmac !== hash) return null;
 
@@ -124,14 +117,26 @@ app.get("/withdraw",(req,res)=>res.sendFile(path.join(__dirname,"withdraw.html")
 app.get("/admin",(req,res)=>res.sendFile(path.join(__dirname,"admin.html")));
 
 /* =========================
-   USER BALANCE (SAFE)
+   GET BALANCE
 ========================= */
 app.post("/get-balance", async (req,res)=>{
-  const telegramId = verifyTelegram(req.body.initData);
-  if(!telegramId) return res.status(401).json({ ngn:0 });
+  let telegramId = null;
+
+  // Try Telegram verification first
+  if (req.body.initData) {
+    telegramId = verifyTelegram(req.body.initData);
+  }
+
+  // Fallback to legacy telegramId (read-only)
+  if (!telegramId && req.body.telegramId) {
+    telegramId = String(req.body.telegramId);
+  }
+
+  if (!telegramId) return res.json({ ngn: 0 });
 
   const { balances } = await readBalances();
-  if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
+  if (!balances[telegramId]) balances[telegramId] = { ngn:0 };
+
   res.json(balances[telegramId]);
 });
 
@@ -145,8 +150,7 @@ app.post("/withdraw", async (req,res)=>{
   if(!telegramId) return res.status(401).json({ error:"Unauthorized" });
 
   const safeAmount = Number(amount);
-  if(!safeAmount || safeAmount <= 0)
-    return res.status(400).json({ error:"Invalid amount" });
+  if(!safeAmount || safeAmount <= 0) return res.status(400).json({ error:"Invalid amount" });
 
   const { balances, sha } = await readBalances();
   if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
@@ -186,6 +190,47 @@ Details: ${JSON.stringify(details,null,2)}`);
 });
 
 /* =========================
-   START
+   ADMIN ENDPOINTS
 ========================= */
-app.listen(PORT,()=>console.log("✅ Server running on",PORT));
+app.post("/admin/get-balance", async (req,res)=>{
+  if(!authAdmin(req,res)) return;
+  const { telegramId } = req.body;
+  if(!telegramId) return res.status(400).json({error:"Missing Telegram ID"});
+
+  const { balances } = await readBalances();
+  if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
+  res.json(balances[telegramId]);
+});
+
+app.post("/admin/update-balance", async (req,res)=>{
+  if(!authAdmin(req,res)) return;
+  const { telegramId, amount, type } = req.body;
+  if(!telegramId || !amount || !type) return res.status(400).json({error:"Invalid request"});
+
+  const { balances, sha } = await readBalances();
+  if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
+
+  const prev = balances[telegramId].ngn;
+
+  if(type==="deposit") balances[telegramId].ngn += amount;
+  if(type==="withdraw"){
+    if(balances[telegramId].ngn < amount) return res.status(400).json({error:"Insufficient balance"});
+    balances[telegramId].ngn -= amount;
+  }
+
+  await updateBalances(balances, sha, `Admin ${type} for ${telegramId}`);
+
+  await sendTelegram(`🛠 ADMIN ACTION
+User: ${telegramId}
+Action: ${type.toUpperCase()}
+Amount: ₦${amount.toLocaleString()}
+Balance Before: ₦${prev.toLocaleString()}
+Balance After: ₦${balances[telegramId].ngn.toLocaleString()}`);
+
+  res.json({ newBalance: balances[telegramId].ngn });
+});
+
+/* =========================
+   START SERVER
+========================= */
+app.listen(PORT,()=>console.log("✅ Server running on port",PORT));
