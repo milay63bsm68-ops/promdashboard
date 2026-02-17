@@ -15,7 +15,6 @@ body {
   font-family:Arial, sans-serif;
   padding:14px;
   margin:0;
-  overflow-x:hidden;
 }
 .container { max-width:420px; margin:0 auto; }
 .card {
@@ -24,7 +23,7 @@ body {
   border-radius:14px;
   margin-bottom:12px;
 }
-h3 { margin:0 0 8px 0; font-size:14px; font-weight:bold; }
+h3 { margin:0 0 8px 0; font-size:14px; }
 input, select {
   width:100%;
   padding:10px;
@@ -34,7 +33,7 @@ input, select {
   background:#020617;
   color:white;
   font-size:14px;
-  height: 50px;
+  height:50px;
 }
 button {
   width:100%;
@@ -45,15 +44,14 @@ button {
   background:#3b82f6;
   color:white;
   font-weight:bold;
-  font-size:14px;
 }
 button:disabled { opacity:0.5; }
 .msg { margin-top:10px; padding:8px; border-radius:8px; font-size:13px; }
 .error { background:#ef4444; }
 .success { background:#22c55e; }
 .loading { background:#facc15; color:black; }
-.small { font-size:12px; opacity:0.75; }
 .hidden { display:none; }
+.small { font-size:12px; opacity:0.75; }
 </style>
 </head>
 
@@ -61,23 +59,17 @@ button:disabled { opacity:0.5; }
 
 <div class="container">
 
-  <!-- USER INFO -->
   <div class="card" id="userInfo">Loading user…</div>
-
-  <!-- BALANCE -->
   <div class="card" id="balanceBox">Loading balance…</div>
 
-  <!-- MESSAGE FOR LOW BALANCE -->
   <div class="card hidden" id="lowBalanceMsg">
     <div class="msg error">
-      Minimum balance required to withdraw:<br>
-      ₦5,000 for bank transfer<br>
-      $20 for crypto
+      Minimum withdrawal:<br>
+      ₦5,000 (Bank)<br>
+      $20 (Crypto)
     </div>
-    <button onclick="window.location.reload()">Go Back</button>
   </div>
 
-  <!-- WITHDRAW FORM -->
   <div class="card hidden" id="withdrawForm">
 
     <h3>Withdrawal Method</h3>
@@ -87,9 +79,8 @@ button:disabled { opacity:0.5; }
       <option value="crypto">Crypto (BNB BEP20)</option>
     </select>
 
-    <!-- BANK -->
     <div id="bankFields" class="hidden">
-      <h3 style="margin-top:10px">Bank Details</h3>
+      <h3>Bank Details</h3>
       <select id="bank">
         <option value="">Select Bank</option>
         <option>Opay</option>
@@ -99,159 +90,139 @@ button:disabled { opacity:0.5; }
         <option>Access Bank</option>
         <option>Zenith Bank</option>
         <option>UBA</option>
-        <option>First Bank</option>
-        <option>FCMB</option>
         <option>Other</option>
       </select>
       <input id="otherBank" placeholder="Other bank name" class="hidden">
       <input id="acctName" placeholder="Account Name">
-      <input type="number" id="acctNumber" placeholder="Account Number">
+      <input id="acctNumber" placeholder="Account Number">
       <input id="bankAmount" type="number" placeholder="Amount (₦)">
-      <div class="small">Minimum: ₦5,000</div>
     </div>
 
-    <!-- CRYPTO -->
     <div id="cryptoFields" class="hidden">
-      <h3 style="margin-top:10px">Crypto Details</h3>
-      <input id="wallet" placeholder="BNB Smart Chain (BEP20) Address">
+      <h3>Crypto Details</h3>
+      <input id="wallet" placeholder="BNB BEP20 Address">
       <input id="cryptoAmount" type="number" placeholder="Amount ($)">
-      <div class="small">Minimum: $20</div>
     </div>
 
-    <!-- CONTACT -->
-    <h3 style="margin-top:10px">Contact Details</h3>
-    <input type="tel" id="whatsapp" placeholder="WhatsApp Number">
-    <input type="tel" id="phone" placeholder="Calling Number">
+    <h3>Contact</h3>
+    <input id="whatsapp" placeholder="WhatsApp Number">
+    <input id="phone" placeholder="Phone Number">
 
-    <button id="withdrawBtn" disabled>Submit Withdrawal</button>
+    <button id="withdrawBtn">Submit Withdrawal</button>
     <div id="msgBox"></div>
   </div>
 
 </div>
 
 <script>
-const API = "/withdraw"; // all calls go through server
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 
+const initData = tg?.initData;
 const user = tg?.initDataUnsafe?.user;
-const telegramId = user ? String(user.id) : null;
 
 const userInfo = document.getElementById("userInfo");
 const balanceBox = document.getElementById("balanceBox");
-const msgBox = document.getElementById("msgBox");
-const withdrawBtn = document.getElementById("withdrawBtn");
 const withdrawForm = document.getElementById("withdrawForm");
 const lowBalanceMsg = document.getElementById("lowBalanceMsg");
-
-// Disable form if no Telegram WebApp
-if(!telegramId){
-  userInfo.innerHTML = "❌ Please open this page from the Telegram WebApp.";
-}
+const msgBox = document.getElementById("msgBox");
+const withdrawBtn = document.getElementById("withdrawBtn");
 
 let balanceNGN = 0;
-let usdRate = 0;
+let usdRate = 0.0026;
 
-// Show user info
-if(telegramId){
+if(!initData){
+  userInfo.innerHTML = "❌ Open this page inside Telegram.";
+}
+
+if(user){
   userInfo.innerHTML = `
-  <b>Name:</b> ${user?.first_name || "N/A"}<br>
-  <b>Username:</b> ${user?.username ? "@"+user.username : "N/A"}<br>
-  <b>ID:</b> ${telegramId}
+    <b>Name:</b> ${user.first_name || "N/A"}<br>
+    <b>Username:</b> ${user.username ? "@"+user.username : "N/A"}<br>
+    <b>ID:</b> ${user.id}
   `;
 }
 
-// Show message
-function showMsg(text, type="success"){
+function showMsg(text,type="success"){
   msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
 }
 
-// Fetch USD rate
 async function fetchUsdRate(){
-  try {
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
-    const data = await res.json();
-    return data.rates.USD || 0.0026;
-  } catch { return 0.0026; }
+  try{
+    const r = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
+    const d = await r.json();
+    usdRate = d.rates.USD || usdRate;
+  }catch{}
 }
 
-// Load balance from server
 async function loadBalance(){
-  if(!telegramId) return;
-  showMsg("Loading balance…", "loading");
-  try {
-    const r = await fetch("/get-balance", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ telegramId })
-    });
-    const d = await r.json();
-    balanceNGN = d?.ngn || 0;
-    usdRate = await fetchUsdRate();
-    const usd = balanceNGN * usdRate;
+  if(!initData) return;
+  showMsg("Loading balance…","loading");
 
-    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${usd.toFixed(2)}`;
+  const r = await fetch("/get-balance",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ initData })
+  });
 
-    if(balanceNGN < 5000 && usd < 20){
-      lowBalanceMsg.classList.remove("hidden");
-      withdrawForm.classList.add("hidden");
-    }else{
-      withdrawForm.classList.remove("hidden");
-      lowBalanceMsg.classList.add("hidden");
-      withdrawBtn.disabled = false;
-    }
-    showMsg("");
-  }catch(err){
-    showMsg("Failed to load balance: "+err.message, "error");
+  const d = await r.json();
+  balanceNGN = d.ngn || 0;
+
+  await fetchUsdRate();
+
+  balanceBox.innerHTML =
+    `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+
+  if(balanceNGN < 5000 && balanceNGN*usdRate < 20){
+    lowBalanceMsg.classList.remove("hidden");
     withdrawForm.classList.add("hidden");
+  }else{
+    withdrawForm.classList.remove("hidden");
     lowBalanceMsg.classList.add("hidden");
   }
+
+  showMsg("");
 }
+
 loadBalance();
 
-// Show/hide fields
 method.onchange = () => {
-  bankFields.style.display = method.value==="bank" ? "block" : "none";
-  cryptoFields.style.display = method.value==="crypto" ? "block" : "none";
+  bankFields.classList.toggle("hidden", method.value !== "bank");
+  cryptoFields.classList.toggle("hidden", method.value !== "crypto");
 };
+
 bank.onchange = () => {
-  otherBank.style.display = bank.value==="Other" ? "block" : "none";
+  otherBank.classList.toggle("hidden", bank.value !== "Other");
 };
 
-// Withdraw
 withdrawBtn.onclick = async () => {
-  if(!telegramId) return;
-  const methodVal = method.value;
-  if(!methodVal) return showMsg("Select withdrawal method", "error");
+  const m = method.value;
+  if(!m) return showMsg("Select withdrawal method","error");
 
-  let amountNGN = 0;
-  let usdAmount = 0;
+  let amount = 0;
 
-  if(methodVal === "bank"){
-    amountNGN = Number(bankAmount.value);
-    if(amountNGN < 5000) return showMsg("Minimum bank withdrawal is ₦5,000", "error");
-    if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
+  if(m === "bank"){
+    amount = Number(bankAmount.value);
+    if(amount < 5000) return showMsg("Minimum ₦5,000","error");
+    if(amount > balanceNGN) return showMsg("Insufficient balance","error");
   }
 
-  if(methodVal === "crypto"){
-    usdAmount = Number(cryptoAmount.value);
-    if(usdAmount < 20) return showMsg("Minimum crypto withdrawal is $20", "error");
-    amountNGN = usdAmount / usdRate;
-    amountNGN = Math.round(amountNGN); // round to nearest Naira
-    if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
+  if(m === "crypto"){
+    amount = Number(cryptoAmount.value);
+    if(amount < 20) return showMsg("Minimum $20","error");
   }
 
-  showMsg("Submitting withdrawal…", "loading");
+  showMsg("Submitting…","loading");
   withdrawBtn.disabled = true;
 
   try{
-    const res = await fetch(API, {
+    const res = await fetch("/withdraw",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        telegramId,
-        method: methodVal,
-        amount: methodVal==="crypto"?usdAmount:Math.round(amountNGN),
+        initData,
+        method: m,
+        amount,
         details:{
           bank: bank.value==="Other"?otherBank.value:bank.value,
           accountName: acctName.value,
@@ -262,15 +233,16 @@ withdrawBtn.onclick = async () => {
         }
       })
     });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error||"Withdrawal failed");
 
-    showMsg("✅ Withdrawal submitted successfully!", "success");
-    balanceNGN = data.newBalance;
-    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
-    withdrawBtn.disabled = true;
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error);
+
+    showMsg("✅ Withdrawal submitted","success");
+    balanceNGN = d.newBalance;
+    balanceBox.innerHTML =
+      `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
   }catch(err){
-    showMsg("❌ Withdrawal failed: "+err.message, "error");
+    showMsg(err.message,"error");
     withdrawBtn.disabled = false;
   }
 };
