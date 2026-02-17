@@ -27,6 +27,32 @@ const {
 } = process.env;
 
 /* =========================
+   TELEGRAM VERIFICATION
+========================= */
+function verifyTelegram(initData) {
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get("hash");
+    params.delete("hash");
+
+    const dataCheckString = [...params.entries()]
+      .sort()
+      .map(([k,v]) => `${k}=${v}`)
+      .join("\n");
+
+    const secret = crypto.createHash("sha256").update(BOT_TOKEN).digest();
+    const hmac = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
+
+    if (hmac !== hash) return null;
+
+    const user = JSON.parse(params.get("user"));
+    return String(user.id);
+  } catch {
+    return null;
+  }
+}
+
+/* =========================
    TELEGRAM SEND
 ========================= */
 async function sendTelegram(text, chatId = ADMIN_ID) {
@@ -91,11 +117,52 @@ app.get("/withdraw",(req,res)=>res.sendFile(path.join(__dirname,"withdraw.html")
 app.get("/admin",(req,res)=>res.sendFile(path.join(__dirname,"admin.html")));
 
 /* =========================
+   PASSCODE STORAGE
+========================= */
+const passcodes = {}; // { telegramId: { code: '123456', expires: timestamp } }
+
+function generatePasscode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function isPasscodeValid(telegramId, code) {
+  if (!passcodes[telegramId]) return false;
+  const data = passcodes[telegramId];
+  if (Date.now() > data.expires) {
+    delete passcodes[telegramId];
+    return false;
+  }
+  if (data.code !== code) return false;
+  delete passcodes[telegramId]; // one-time use
+  return true;
+}
+
+/* =========================
+   GENERATE PASSCODE ENDPOINT
+========================= */
+app.post("/generate-passcode", async (req,res) => {
+  const { initData } = req.body;
+  const telegramId = verifyTelegram(initData);
+  if (!telegramId) return res.status(401).json({ error: "Unauthorized" });
+
+  const code = generatePasscode();
+  passcodes[telegramId] = { code, expires: Date.now() + 10 * 60 * 1000 }; // 10 min
+  console.log(`Passcode for ${telegramId}: ${code}`); // For testing
+
+  await sendTelegram(`✅ Your withdrawal passcode: ${code}`, telegramId);
+
+  res.json({ success: true, message: "Passcode sent via Telegram" });
+});
+
+/* =========================
    GET BALANCE
 ========================= */
 app.post("/get-balance", async (req,res)=>{
-  const telegramId = req.body.telegramId;
-  if(!telegramId) return res.json({ ngn: 0 });
+  let telegramId = null;
+
+  if (req.body.initData) telegramId = verifyTelegram(req.body.initData);
+
+  if (!telegramId) return res.json({ ngn: 0 });
 
   const { balances } = await readBalances();
   if (!balances[telegramId]) balances[telegramId] = { ngn:0 };
@@ -104,47 +171,19 @@ app.post("/get-balance", async (req,res)=>{
 });
 
 /* =========================
-   WITHDRAWAL PASSCODES
-========================= */
-const passcodes = {}; // { "user123": "123456" }
-
-function generatePasscode(userId){
-  const code = Math.floor(100000 + Math.random()*900000); // 6-digit
-  passcodes[userId] = code.toString();
-  // Auto expire after 10 minutes
-  setTimeout(()=>delete passcodes[userId], 10*60*1000);
-  return code;
-}
-
-/* =========================
-   GENERATE PASSCODE
-========================= */
-app.post("/generate-passcode", async (req,res)=>{
-  const { telegramId } = req.body;
-  if(!telegramId) return res.status(400).json({error:"Missing user ID"});
-  const code = generatePasscode(telegramId);
-  // Optionally send code via Telegram if BOT_TOKEN is set
-  await sendTelegram(`🔑 Your withdrawal code: ${code}`, telegramId);
-  res.json({ passcode: code });
-});
-
-/* =========================
-   USER WITHDRAW (PASSCODE)
+   USER WITHDRAW
 ========================= */
 app.post("/withdraw", async (req,res)=>{
-  const { telegramId, passcode, amount, method, details } = req.body;
+  const { initData, amount, method, passcode, details } = req.body;
+  const telegramId = verifyTelegram(initData);
+  if(!telegramId) return res.status(401).json({ error:"Unauthorized" });
 
-  if(!telegramId || !passcode) 
-    return res.status(401).json({ error:"User ID and passcode required" });
-
-  if(!passcodes[telegramId] || passcodes[telegramId] !== passcode)
-    return res.status(401).json({ error:"Invalid or expired passcode" });
-
-  delete passcodes[telegramId]; // consume passcode
+  // Verify passcode
+  if(!isPasscodeValid(telegramId, passcode))
+    return res.status(400).json({ error:"Invalid or expired passcode" });
 
   const safeAmount = Number(amount);
-  if(!safeAmount || safeAmount <= 0) 
-    return res.status(400).json({ error:"Invalid amount" });
+  if(!safeAmount || safeAmount <= 0) return res.status(400).json({ error:"Invalid amount" });
 
   const { balances, sha } = await readBalances();
   if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
