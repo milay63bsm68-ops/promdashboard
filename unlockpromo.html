@@ -5,30 +5,81 @@
 <title>Unlock Promo Earnings</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
-/* same styles as before */
 body { background:#020617; color:white; font-family:Arial,sans-serif; padding:20px; }
 .container { max-width:480px; margin:auto; }
 .card { background:#0f172a; padding:16px; border-radius:14px; margin-bottom:15px; }
-button { width:100%; padding:14px; border:none; border-radius:12px; font-weight:bold; margin-top:10px; cursor:pointer; }
+
+button {
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  margin-top:10px;
+  cursor:pointer;
+}
+
 .primary { background:#22c55e; color:white; }
 .secondary { background:#3b82f6; color:white; }
 .whatsapp { background:#25D366; color:white; }
 .telegram { background:#0088cc; color:white; }
 .copy { background:#334155; color:white; font-size:13px; }
-input { width:100%; padding:12px; border-radius:10px; border:none; margin-top:10px; background:#020617; color:white; height:26px; }
-select { width:100%; padding:12px; border-radius:10px; border:none; margin-top:10px; background:#020617; color:white; height:50px; }
+
+input {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  margin-top:10px;
+  background:#020617;
+  color:white;
+}
+
 .status { margin-top:10px; font-size:14px; text-align:center; }
 .hidden { display:none; }
-.addressBox { margin-top:12px; padding:14px; background:#020617; border-radius:10px; font-size:14px; line-height:1.6; }
-.small { font-size:12px; opacity:0.85; }
-.amount { color:#22c55e; font-weight:bold; font-size:16px; }
-label { display:block; margin-top:10px; cursor:pointer; }
+
+.taskSelect {
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+.taskOption {
+  flex:1;
+  padding:14px;
+  text-align:center;
+  border-radius:12px;
+  background:#020617;
+  cursor:pointer;
+  font-weight:bold;
+  border:2px solid transparent;
+}
+
+.taskOption.active {
+  border-color:#22c55e;
+  background:#052e16;
+}
+
+.addressBox {
+  margin-top:12px;
+  padding:14px;
+  background:#020617;
+  border-radius:10px;
+  font-size:14px;
+}
+
+.amount { color:#22c55e; font-weight:bold; }
+.small { font-size:12px; opacity:.85; }
 </style>
 </head>
+
 <body>
 <div class="container">
+
 <div class="card" id="userInfo">Loading user info...</div>
+
 <div class="card">
 <b>🔓 Unlock Promo Earnings</b><br><br>
 Choose how you want to unlock 👇
@@ -48,23 +99,35 @@ Choose how you want to unlock 👇
 2️⃣ Invite <b>10 people</b><br>
 3️⃣ Upload <b>screenshots or any proof</b><br><br>
 
-<label><input type="radio" name="taskType" value="whatsapp" onchange="selectTask()"> WhatsApp Task</label>
-<label><input type="radio" name="taskType" value="telegram" onchange="selectTask()"> Telegram Task</label>
+<div class="taskSelect">
+  <div id="optWhatsapp" class="taskOption" onclick="chooseTask('whatsapp')">
+    WhatsApp Task
+  </div>
+  <div id="optTelegram" class="taskOption" onclick="chooseTask('telegram')">
+    Telegram Task
+  </div>
+</div>
 
 <hr style="opacity:.2">
 
 <div id="whatsappBox" class="hidden">
-<a href="https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t" target="_blank">
-<button class="whatsapp">📲 Join WhatsApp Group</button></a>
-<button class="copy" onclick="copyText('https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t')">📋 Copy WhatsApp Group Link</button>
-<input id="taskWhatsapp" placeholder="Your WhatsApp number">
+  <a href="https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t" target="_blank">
+    <button class="whatsapp">📲 Join WhatsApp Group</button>
+  </a>
+  <button class="copy" onclick="copyText('https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t')">
+    📋 Copy WhatsApp Group Link
+  </button>
+  <input id="taskWhatsapp" placeholder="Your WhatsApp number">
 </div>
 
 <div id="telegramBox" class="hidden">
-<a href="https://t.me/YourTelegramGroup" target="_blank">
-<button class="telegram">📲 Join Telegram Group</button></a>
-<button class="copy" onclick="copyText('https://t.me/YourTelegramGroup')">📋 Copy Telegram Group Link</button>
-<input id="taskTelegram" placeholder="Your Telegram username or ID">
+  <a href="https://t.me/YourTelegramGroup" target="_blank">
+    <button class="telegram">📲 Join Telegram Group</button>
+  </a>
+  <button class="copy" onclick="copyText('https://t.me/YourTelegramGroup')">
+    📋 Copy Telegram Group Link
+  </button>
+  <input id="taskTelegram" placeholder="Your Telegram username or ID">
 </div>
 
 <input id="taskCall" placeholder="Calling number">
@@ -76,97 +139,129 @@ Choose how you want to unlock 👇
 <!-- PURCHASE -->
 <div class="card hidden" id="purchaseBox">
 <b>💳 Select Payment Method</b>
-<select id="payMethod" onchange="updatePaymentAddress()">
+
+<select id="payMethod" onchange="updatePaymentAddress()"
+style="width:100%;padding:12px;border-radius:10px;background:#020617;color:white;margin-top:10px;">
 <option value="">Select method</option>
 <option value="bank">Bank Transfer</option>
 <option value="bnb">BNB Smart Chain (BEP20)</option>
 </select>
+
 <div id="paymentAddress" class="addressBox hidden"></div>
+
 <input id="payWhatsapp" placeholder="Your WhatsApp number">
 <input id="payCall" placeholder="Calling number">
 <input type="file" accept="image/*" id="payShot">
 <button class="secondary" onclick="submitPayment()">Submit Payment</button>
 <div class="status" id="payStatus"></div>
 </div>
+
 </div>
 
 <script>
 const tg = Telegram.WebApp; tg.ready();
 const BACKEND = "https://promo-oz59.onrender.com";
+
 const user = tg.initDataUnsafe?.user || {};
 const telegramId = user.id;
 const name = user.first_name || "Guest";
 const username = user.username ? "@"+user.username : "No username";
 
-userInfo.innerHTML = `<b>Name:</b> ${name}<br><b>Username:</b> ${username}<br><b>ID:</b> ${telegramId||"Not available"}`;
+userInfo.innerHTML = `<b>Name:</b> ${name}<br><b>Username:</b> ${username}<br><b>ID:</b> ${telegramId||"N/A"}`;
 
-function showTask(){ taskBox.classList.remove("hidden"); purchaseBox.classList.add("hidden"); taskStatus.innerHTML=""; }
-function showPurchase(){ purchaseBox.classList.remove("hidden"); taskBox.classList.add("hidden"); payStatus.innerHTML=""; }
+let selectedTask = "";
 
-function selectTask(){
-  const type = document.querySelector('input[name="taskType"]:checked')?.value;
+function showTask(){
+  taskBox.classList.remove("hidden");
+  purchaseBox.classList.add("hidden");
+}
+
+function showPurchase(){
+  purchaseBox.classList.remove("hidden");
+  taskBox.classList.add("hidden");
+}
+
+function chooseTask(type){
+  selectedTask = type;
+
+  optWhatsapp.classList.toggle("active", type==="whatsapp");
+  optTelegram.classList.toggle("active", type==="telegram");
+
   whatsappBox.classList.toggle("hidden", type!=="whatsapp");
   telegramBox.classList.toggle("hidden", type!=="telegram");
 }
 
+function copyText(text){
+  navigator.clipboard.writeText(text);
+  tg.showAlert("Copied ✅");
+}
+
 function updatePaymentAddress(){
-  const box=paymentAddress;
   if(payMethod.value==="bank"){
-    box.innerHTML=`<b>🏦 Bank Transfer</b><br><br><b>💰 Amount to Pay:</b><br><span class="amount">₦2,000 (exactly)</span><br><br>Account Name: Olatunji Abdulmalik Ayomide<br>Account Number: 9114301708<br>Bank: Opay<br><br><span class="small">⚠️ Pay the exact amount. Overpayment or underpayment may delay approval.</span><br><br><button class="copy" onclick="copyText('9114301708')">📋 Copy Account Number</button>`;
-    box.classList.remove("hidden");
+    paymentAddress.innerHTML=`<b>🏦 Bank Transfer</b><br><br>
+    <b>💰 Amount:</b> <span class="amount">₦2,000</span><br><br>
+    Account Name: Olatunji Abdulmalik Ayomide<br>
+    Account Number: 9114301708<br>
+    Bank: Opay<br><br>
+    <button class="copy" onclick="copyText('9114301708')">📋 Copy Account Number</button>`;
+    paymentAddress.classList.remove("hidden");
   } else if(payMethod.value==="bnb"){
-    box.innerHTML=`<b>💎 Crypto Payment (BNB Smart Chain – BEP20)</b><br><br><b>💰 Amount to Pay:</b><br><span class="amount">$4.5 (USD)</span><br><br><b>Network:</b> BNB Smart Chain (BEP20)<br><b>Wallet Address:</b><br>0xbBcc409872bC2441400735624638F3D67DAa7C4C<br><br><span class="small">⚠️ Send only BNB on BEP20 network.</span><br><br><button class="copy" onclick="copyText('0xbBcc409872bC2441400735624638F3D67DAa7C4C')">📋 Copy BNB Address</button>`;
-    box.classList.remove("hidden");
-  } else { box.classList.add("hidden"); }
+    paymentAddress.innerHTML=`<b>💎 BNB (BEP20)</b><br><br>
+    <b>💰 Amount:</b> <span class="amount">$4.5</span><br><br>
+    Wallet Address: 0xbBcc409872bC2441400735624638F3D67DAa7C4C<br><br>
+    <button class="copy" onclick="copyText('0xbBcc409872bC2441400735624638F3D67DAa7C4C')">📋 Copy BNB Address</button>`;
+    paymentAddress.classList.remove("hidden");
+  } else {
+    paymentAddress.classList.add("hidden");
+  }
 }
 
-function copyText(text){ navigator.clipboard.writeText(text); tg.showAlert("Copied ✅"); }
-
-/* BASE64 */
-function toBase64(file){
-  return new Promise((resolve,reject)=>{
-    if(file.size>5*1024*1024) return reject(new Error("Image too large"));
-    const reader=new FileReader();
-    const img=new Image();
-    reader.onload=e=>img.src=e.target.result;
-    img.onload=()=>{ const canvas=document.createElement("canvas"); canvas.width=img.width; canvas.height=img.height; canvas.getContext("2d").drawImage(img,0,0); resolve(canvas.toDataURL("image/jpeg",0.85)); };
-    reader.onerror=reject; reader.readAsDataURL(file);
-  });
-}
-
-/* BACK TO DASHBOARD BUTTON */
-function showBackToDashboard(targetElement){
-  const existing=document.getElementById("backDashboardBtn"); if(existing) existing.remove();
-  const btn=document.createElement("button"); btn.id="backDashboardBtn"; btn.className="secondary"; btn.innerText="⬅ Back to Dashboard"; btn.onclick=()=>window.location.href="dashboard.html";
-  targetElement.appendChild(btn);
-}
-
-/* SUBMIT TASK */
 async function submitTask(){
-  const type=document.querySelector('input[name="taskType"]:checked')?.value;
-  if(!telegramId) return taskStatus.innerHTML="❌ Open from Telegram";
-  if(!type) return taskStatus.innerHTML="❌ Select WhatsApp or Telegram";
-  if(!taskShot.files.length) return taskStatus.innerHTML="❌ Upload screenshot";
+  if(!selectedTask) return taskStatus.innerHTML="❌ Select a task option";
+  if(!taskShot.files.length) return taskStatus.innerHTML="❌ Upload proof";
+
   taskStatus.innerHTML="⏳ Sending...";
-  try{
-    for(const f of taskShot.files){
-      const image=await toBase64(f);
-      await fetch(BACKEND+"/unlock-promo",{ method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ telegramId,name,username, method:"Task", whatsapp:type==="whatsapp"?taskWhatsapp.value:"N/A", telegramTask:type==="telegram"?taskTelegram.value:"N/A", call:taskCall.value||"N/A", image, type:"task" }) });
-    }
-    taskStatus.innerHTML="✅ Task submitted"; tg.showAlert("Task submitted ✅"); showBackToDashboard(taskBox);
-  }catch(e){ taskStatus.innerHTML="❌ "+e.message; }
+  for(const f of taskShot.files){
+    const reader = new FileReader();
+    reader.onload = async () => {
+      await fetch(BACKEND+"/unlock-promo",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          telegramId,name,username,
+          method:"Task",
+          whatsapp:selectedTask==="whatsapp"?taskWhatsapp.value:"N/A",
+          telegramTask:selectedTask==="telegram"?taskTelegram.value:"N/A",
+          call:taskCall.value||"N/A",
+          image:reader.result,
+          type:"task"
+        })
+      });
+    };
+    reader.readAsDataURL(f);
+  }
+  taskStatus.innerHTML="✅ Task submitted";
 }
 
-/* SUBMIT PAYMENT */
 async function submitPayment(){
-  if(!telegramId) return payStatus.innerHTML="❌ Open from Telegram";
-  if(!payShot.files[0]||!payMethod.value) return payStatus.innerHTML="❌ Missing data";
-  payStatus.innerHTML="⏳ Sending...";
-  try{
-    const image=await toBase64(payShot.files[0]);
-    await fetch(BACKEND+"/unlock-promo",{ method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ telegramId,name,username, method:payMethod.value, whatsapp:payWhatsapp.value||"N/A", call:payCall.value||"N/A", image, type:"payment" }) });
-    payStatus.innerHTML="✅ Payment sent"; tg.showAlert("Payment submitted ✅"); showBackToDashboard(purchaseBox);
-  }catch(e){ payStatus.innerHTML="❌ "+e.message; }
+  if(!payShot.files[0]) return payStatus.innerHTML="❌ Upload receipt";
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    await fetch(BACKEND+"/unlock-promo",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
+        telegramId,name,username,
+        method:payMethod.value,
+        whatsapp:payWhatsapp.value||"N/A",
+        call:payCall.value||"N/A",
+        image:reader.result,
+        type:"payment"
+      })
+    });
+    payStatus.innerHTML="✅ Payment sent";
+  };
+  reader.readAsDataURL(payShot.files[0]);
 }
 </script>
 </body>
