@@ -100,11 +100,11 @@ Choose how you want to unlock 👇
 3️⃣ Upload <b>screenshots or any proof</b><br><br>
 
 <div class="taskSelect">
-  <div id="optWhatsapp" class="taskOption" onclick="chooseTask('whatsapp')">
-    WhatsApp Task
-  </div>
   <div id="optTelegram" class="taskOption" onclick="chooseTask('telegram')">
     Telegram Task
+  </div>
+    <div id="optWhatsapp" class="taskOption" onclick="chooseTask('whatsapp')">
+    WhatsApp Task
   </div>
 </div>
 
@@ -117,20 +117,20 @@ Choose how you want to unlock 👇
   <button class="copy" onclick="copyText('https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t')">
     📋 Copy WhatsApp Group Link
   </button>
-  <input id="taskWhatsapp" placeholder="Your WhatsApp number">
+  <input type="tel" id="taskWhatsapp" placeholder="Your WhatsApp number">
 </div>
 
 <div id="telegramBox" class="hidden">
-  <a href="https://t.me/YourTelegramGroup" target="_blank">
+  <a href="https://t.me/mayohtech" target="_blank">
     <button class="telegram">📲 Join Telegram Group</button>
   </a>
-  <button class="copy" onclick="copyText('https://t.me/YourTelegramGroup')">
+  <button class="copy" onclick="copyText('https://t.me/mayohtech')">
     📋 Copy Telegram Group Link
   </button>
   <input id="taskTelegram" placeholder="Your Telegram username or ID">
 </div>
 
-<input id="taskCall" placeholder="Calling number">
+<input type="tel" id="taskCall" placeholder="Calling number">
 <input type="file" accept="image/*" id="taskShot" multiple>
 <button class="primary" onclick="submitTask()">Submit Task</button>
 <div class="status" id="taskStatus"></div>
@@ -149,8 +149,8 @@ style="width:100%;padding:12px;border-radius:10px;background:#020617;color:white
 
 <div id="paymentAddress" class="addressBox hidden"></div>
 
-<input id="payWhatsapp" placeholder="Your WhatsApp number">
-<input id="payCall" placeholder="Calling number">
+<input type="tel" id="payWhatsapp" placeholder="Your WhatsApp number">
+<input type="tel" id="payCall" placeholder="Calling number">
 <input type="file" accept="image/*" id="payShot">
 <button class="secondary" onclick="submitPayment()">Submit Payment</button>
 <div class="status" id="payStatus"></div>
@@ -216,15 +216,23 @@ function updatePaymentAddress(){
   }
 }
 
+// ====== UPDATED TASK SUBMISSION ======
 async function submitTask(){
   if(!selectedTask) return taskStatus.innerHTML="❌ Select a task option";
   if(!taskShot.files.length) return taskStatus.innerHTML="❌ Upload proof";
 
   taskStatus.innerHTML="⏳ Sending...";
-  for(const f of taskShot.files){
-    const reader = new FileReader();
-    reader.onload = async () => {
-      await fetch(BACKEND+"/unlock-promo",{
+  
+  try {
+    for(const f of taskShot.files){
+      const reader = new FileReader();
+      const fileData = await new Promise((resolve, reject)=>{
+        reader.onload = ()=>resolve(reader.result);
+        reader.onerror = ()=>reject("Failed to read file");
+        reader.readAsDataURL(f);
+      });
+
+      const res = await fetch(BACKEND+"/unlock-promo",{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({
@@ -233,21 +241,37 @@ async function submitTask(){
           whatsapp:selectedTask==="whatsapp"?taskWhatsapp.value:"N/A",
           telegramTask:selectedTask==="telegram"?taskTelegram.value:"N/A",
           call:taskCall.value||"N/A",
-          image:reader.result,
+          image:fileData,
           type:"task"
         })
       });
-    };
-    reader.readAsDataURL(f);
+
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || "Server rejected submission");
+    }
+
+    taskStatus.innerHTML="✅ Task successfully submitted!";
+  } catch(err){
+    console.error(err);
+    taskStatus.innerHTML=`❌ Submission failed: ${err.message}`;
   }
-  taskStatus.innerHTML="✅ Task submitted";
 }
 
+// ====== UPDATED PAYMENT SUBMISSION ======
 async function submitPayment(){
   if(!payShot.files[0]) return payStatus.innerHTML="❌ Upload receipt";
+
+  payStatus.innerHTML="⏳ Sending...";
   const reader = new FileReader();
-  reader.onload = async ()=>{
-    await fetch(BACKEND+"/unlock-promo",{
+
+  try {
+    const fileData = await new Promise((resolve,reject)=>{
+      reader.onload = ()=>resolve(reader.result);
+      reader.onerror = ()=>reject("Failed to read file");
+      reader.readAsDataURL(payShot.files[0]);
+    });
+
+    const res = await fetch(BACKEND+"/unlock-promo",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
@@ -255,13 +279,19 @@ async function submitPayment(){
         method:payMethod.value,
         whatsapp:payWhatsapp.value||"N/A",
         call:payCall.value||"N/A",
-        image:reader.result,
+        image:fileData,
         type:"payment"
       })
     });
-    payStatus.innerHTML="✅ Payment sent";
-  };
-  reader.readAsDataURL(payShot.files[0]);
+
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || "Server rejected submission");
+
+    payStatus.innerHTML="✅ Payment successfully sent!";
+  } catch(err){
+    console.error(err);
+    payStatus.innerHTML=`❌ Submission failed: ${err.message}`;
+  }
 }
 </script>
 </body>
