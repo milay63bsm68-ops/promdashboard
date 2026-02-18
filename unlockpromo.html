@@ -255,6 +255,20 @@ function toBase64(file){
   });
 }
 
+/* ===== BACK TO DASHBOARD BUTTON ===== */
+function showBackToDashboard(targetElement){
+  const existing = document.getElementById("backDashboardBtn");
+  if(existing) existing.remove();
+
+  const btn = document.createElement("button");
+  btn.id = "backDashboardBtn";
+  btn.className = "secondary";
+  btn.innerText = "⬅ Back to Dashboard";
+  btn.onclick = () => window.location.href = "dashboard.html";
+
+  targetElement.appendChild(btn);
+}
+
 /* ===== SUBMIT TASK ===== */
 async function submitTask(){
   if(!telegramId) return taskStatus.innerHTML = "❌ Open from Telegram";
@@ -279,6 +293,10 @@ async function submitTask(){
     }
     taskStatus.innerHTML = "✅ Task submitted";
     tg.showAlert("Task submitted ✅");
+
+    // Show Back to Dashboard button
+    showBackToDashboard(taskBox);
+
   }catch(e){
     taskStatus.innerHTML = "❌ " + e.message;
   }
@@ -306,6 +324,10 @@ async function submitPayment(){
     });
     payStatus.innerHTML = "✅ Payment sent";
     tg.showAlert("Payment submitted ✅");
+
+    // Show Back to Dashboard button
+    showBackToDashboard(purchaseBox);
+
   }catch(e){
     payStatus.innerHTML = "❌ " + e.message;
   }
