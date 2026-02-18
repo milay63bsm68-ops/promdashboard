@@ -38,6 +38,7 @@ button {
 .withdraw { background:#3b82f6; color:white; }
 .unlock { background:#22c55e; color:white; }
 .copy { background:#1e40af; color:white; }
+.tools { background:#f59e0b; color:white; }
 
 table {
   width:100%;
@@ -55,6 +56,10 @@ th {
 }
 small {
   color:#94a3b8;
+}
+a {
+  color:#3b82f6;
+  text-decoration:underline;
 }
 </style>
 </head>
@@ -177,10 +182,17 @@ function checkPromo() {
 
   const hasPromo = PROMO_LIST.includes(telegramId);
 
+  // Show tools button for everyone
+  let content = `
+    <button class="tools" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
+      🛠️ All Tools & Links
+    </button><br><br>
+  `;
+
+  // Add promo code & link only for users in PROMO_LIST
   if (hasPromo) {
     const promoLink = `https://yourwebsite.com/signup?ref=${telegramId}`;
-
-    promoContainer.innerHTML = `
+    content += `
       <b>🎯 Promo Access:</b> Enabled ✅<br><br>
 
       <button class="copy" onclick="copyText('${telegramId}')">
@@ -191,15 +203,22 @@ function checkPromo() {
         🔗 Copy Promo Link
       </button>
 
+      <br><br>
+      <b>Promo Link:</b> <a href="${promoLink}" target="_blank">${promoLink}</a>
+
+      <br><br>
       <small>Your promo code is your Telegram ID</small>
     `;
   } else {
-    promoContainer.innerHTML = `
+    // Show unlock button only if not in PROMO_LIST
+    content += `
       <button class="unlock" onclick="location.href='unlockpromo.html'">
         🔓 Unlock Promo Earnings
       </button>
     `;
   }
+
+  promoContainer.innerHTML = content;
 }
 
 function copyText(text) {
