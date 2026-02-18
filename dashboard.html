@@ -72,19 +72,8 @@ a {
   <div class="card" id="balance">Loading balance...</div>
   <div class="card" id="promo"></div>
 
-  <div class="card">
-    <!-- Withdraw button at the top -->
-    <button class="withdraw" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
-      💸 Withdraw
-    </button><br><br>
-
-    <!-- All Tools & Links button at the bottom -->
-    <button class="tools" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
-      🛠️ All Tools & Links
-    </button>
-
-    <!-- Earnings description -->
-    <div id="earnings" style="margin-top:18px;"></div>
+  <div class="card" id="actionCard">
+    <!-- This will be swapped dynamically -->
   </div>
 
 </div>
@@ -141,6 +130,16 @@ async function loadBalance() {
     ₦${ngn.toLocaleString()} ≈ $${(ngn * usdRate).toFixed(2)}
   `;
 
+  document.getElementById("actionCard").innerHTML = `
+    <!-- Swapped: All Tools button replaces Withdraw position -->
+    <button class="tools" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
+      🛠️ Al hæçking tools & Links
+    </button>
+
+    <!-- Earnings description -->
+    <div id="earnings" style="margin-top:18px;"></div>
+  `;
+
   document.getElementById("earnings").innerHTML = `
     <b>💰 How Promo Earnings Work</b><br><br>
     When someone buys any premium plan using <b>your personal promo code</b>,
@@ -188,10 +187,10 @@ function checkPromo() {
 
   const hasPromo = PROMO_LIST.includes(telegramId);
 
-  // Show tools button for everyone inside promo card
+  // Swap: Withdraw button replaces All Tools position in promo card
   let content = `
-    <button class="tools" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
-      🛠️ All Tools & Links
+    <button class="withdraw" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
+      💸 Withdraw
     </button><br><br>
   `;
 
