@@ -70,10 +70,8 @@ input, select {
 <body>
 <div class="container">
 
-  <!-- USER INFO -->
   <div class="card" id="userInfo">Loading user info...</div>
 
-  <!-- BOT LINK -->
   <div class="card">
     <b>🤖 Promo Bot</b><br><br>
     <a href="https://t.me/intelpremiumbot" target="_blank">
@@ -81,13 +79,11 @@ input, select {
     </a>
   </div>
 
-  <!-- UNLOCK OPTIONS -->
   <div class="card">
     <b>🔓 Unlock Promo Earnings</b><br><br>
     Choose how you want to unlock 👇
   </div>
 
-  <!-- TEST CONNECTION -->
   <div class="card">
     <button class="copy" onclick="testConnection()">🔍 Test Server Connection</button>
     <div class="status" id="testStatus"></div>
@@ -107,6 +103,7 @@ input, select {
     <a href="https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t" target="_blank">
       <button class="whatsapp">📲 Join WhatsApp Group</button>
     </a>
+
     <button class="copy" onclick="copyText('https://chat.whatsapp.com/FVt9vJB1sbJ9q5LTQ0nB3O?mode=gi_t')">
       📋 Copy WhatsApp Group Link
     </button>
@@ -152,16 +149,11 @@ const telegramId = user.id;
 const name = user.first_name || "Guest";
 const username = user.username ? "@"+user.username : "No username";
 
-// Show user info
 document.getElementById("userInfo").innerHTML = `
 <b>Name:</b> ${name}<br>
 <b>Username:</b> ${username}<br>
 <b>ID:</b> ${telegramId || "Not available"}
 `;
-
-// Log for debugging
-console.log("User Info:", { telegramId, name, username });
-console.log("Backend URL:", BACKEND);
 
 function showTask(){
   taskBox.classList.remove("hidden");
@@ -176,208 +168,113 @@ function showPurchase(){
 }
 
 function updatePaymentAddress(){
-  const method = payMethod.value;
-  const box = document.getElementById("paymentAddress");
-
-  if(method === "bank"){
+  const box = paymentAddress;
+  if(payMethod.value === "bank"){
     box.innerHTML = `
-<b>🏦 Bank Transfer Details</b><br><br>
-<b>Account Name:</b><br>Intel Premium<br><br>
-<b>Account Number:</b><br><span id="bankAcc">9114301708</span><br><br>
-<b>Bank Name:</b><br>Opay<br><br>
-<button class="copy" onclick="copyText('9114301708')">📋 Copy Account Number</button>
-    `;
+<b>🏦 Bank Transfer</b><br><br>
+Account Name: Intel Premium<br>
+Account Number: 9114301708<br>
+Bank: Opay
+<button class="copy" onclick="copyText('9114301708')">📋 Copy</button>`;
     box.classList.remove("hidden");
-  } 
-  else if(method === "bnb"){
+  } else if(payMethod.value === "bnb"){
     box.innerHTML = `
-<b>💎 Crypto Payment</b><br><br>
-<b>Network:</b><br>BNB Smart Chain (BEP20)<br><br>
-<b>Wallet Address:</b><br><span id="bnbAddr">0xbBcc409872bC2441400735624638F3D67DAa7C4C</span><br><br>
-<button class="copy" onclick="copyText('0xbBcc409872bC2441400735624638F3D67DAa7C4C')">📋 Copy Wallet Address</button>
-<p class="small">⚠️ Send ONLY <b>BNB (BEP20)</b> to this address. Sending other tokens will result in permanent loss.</p>
-    `;
+<b>💎 Crypto (BEP20)</b><br><br>
+0xbBcc409872bC2441400735624638F3D67DAa7C4C
+<button class="copy" onclick="copyText('0xbBcc409872bC2441400735624638F3D67DAa7C4C')">📋 Copy</button>`;
     box.classList.remove("hidden");
-  } 
-  else {
+  } else {
     box.classList.add("hidden");
   }
 }
 
 function copyText(text){
-  navigator.clipboard.writeText(text).then(()=>{ 
-    tg.showAlert("Copied successfully ✅");
-  }).catch(()=>{
-    alert("Copied: " + text);
-  });
+  navigator.clipboard.writeText(text);
+  tg.showAlert("Copied ✅");
 }
 
-async function testConnection(){
-  const testStatus = document.getElementById("testStatus");
-  testStatus.innerHTML = "⏳ Testing connection...";
-  
-  try {
-    // Test root endpoint
-    const response = await fetch(BACKEND);
-    const data = await response.json();
-    
-    console.log("Server test response:", data);
-    
-    if(response.ok){
-      testStatus.innerHTML = `✅ Server is running!<br>Status: ${data.status}`;
-    } else {
-      testStatus.innerHTML = `⚠️ Server responded but with error: ${response.status}`;
-    }
-    
-    // Test health endpoint
-    const healthResponse = await fetch(BACKEND + "/health");
-    const healthData = await healthResponse.json();
-    
-    console.log("Health check:", healthData);
-    
-    testStatus.innerHTML += `<br>Bot Token: ${healthData.botToken}<br>Admin ID: ${healthData.adminId}`;
-    
-  } catch(err) {
-    console.error("Connection test failed:", err);
-    testStatus.innerHTML = `❌ Cannot connect to server<br>Error: ${err.message}<br><br>Backend URL: ${BACKEND}`;
-  }
-}
-
+/* ===== SAFE BASE64 (JPEG) ===== */
 function toBase64(file){
-  return new Promise(resolve=>{
-    const fr = new FileReader();
-    fr.onload = ()=>resolve(fr.result);
-    fr.readAsDataURL(file);
+  return new Promise((resolve, reject)=>{
+    if(file.size > 5 * 1024 * 1024){
+      reject(new Error("Image too large (max 5MB)"));
+      return;
+    }
+
+    const reader = new FileReader();
+    const img = new Image();
+
+    reader.onload = e => img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext("2d").drawImage(img,0,0);
+      resolve(canvas.toDataURL("image/jpeg",0.85));
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
 
+/* ===== SUBMIT TASK ===== */
 async function submitTask(){
-  const files = taskShot.files;
-  
-  if(!telegramId){
-    taskStatus.innerHTML = "❌ Telegram ID not found. Please open this from Telegram.";
-    return;
-  }
-  
-  if(!files.length){
-    taskStatus.innerHTML = "❌ Upload at least one screenshot";
-    return;
-  }
-  
-  taskStatus.innerHTML = "⏳ Sending task...";
-  
+  if(!telegramId) return taskStatus.innerHTML = "❌ Open from Telegram";
+  if(!taskShot.files.length) return taskStatus.innerHTML = "❌ Upload screenshot";
+
+  taskStatus.innerHTML = "⏳ Sending...";
+
   try{
-    let successCount = 0;
-    for(let f of files){
+    let sent = 0;
+    for(const f of taskShot.files){
       const image = await toBase64(f);
-      const payload = {
-        telegramId,
-        name,
-        username,
-        method: "Task",
-        whatsapp: taskWhatsapp.value || "N/A",
-        call: taskCall.value || "N/A",
-        image,
-        type: "task"
-      };
-      
-      console.log("Sending task payload:", { ...payload, image: "base64_data_hidden" });
-      console.log("Backend URL:", BACKEND+"/unlock-promo");
-      
-      const response = await fetch(BACKEND+"/unlock-promo", {
+      const res = await fetch(BACKEND+"/unlock-promo",{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(payload)
+        body:JSON.stringify({
+          telegramId,name,username,
+          method:"Task",
+          whatsapp:taskWhatsapp.value||"N/A",
+          call:taskCall.value||"N/A",
+          image,type:"task"
+        })
       });
-      
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-      
-      const result = await response.json();
-      console.log("Server response:", result);
-      
-      if(response.ok){
-        successCount++;
-      } else {
-        // Show the actual error from server
-        const errorMsg = result.details || result.error || "Unknown error";
-        throw new Error(errorMsg);
-      }
+      if(!res.ok) throw new Error("Server rejected image");
+      sent++;
     }
-    
-    taskStatus.innerHTML = `✅ ${successCount} screenshot(s) sent for review`;
-    tg.showAlert("✅ Task submitted successfully!");
-    
-  }catch(err){
-    console.error("Error submitting task:", err);
-    taskStatus.innerHTML = "❌ Error: " + err.message;
-    
-    // Show detailed error to user
-    const errorDetails = `
-Failed to submit task.
-Error: ${err.message}
-
-Please check:
-1. Server is running
-2. Bot token is configured
-3. Admin ID is set
-4. Internet connection
-    `;
-    
-    tg.showAlert(errorDetails);
+    taskStatus.innerHTML = `✅ ${sent} screenshot(s) sent`;
+    tg.showAlert("Task submitted ✅");
+  }catch(e){
+    taskStatus.innerHTML = "❌ " + e.message;
   }
 }
 
+/* ===== SUBMIT PAYMENT ===== */
 async function submitPayment(){
-  const file = payShot.files[0];
-  
-  if(!telegramId){
-    payStatus.innerHTML = "❌ Telegram ID not found. Please open this from Telegram.";
-    return;
-  }
-  
-  if(!file || !payMethod.value){
-    payStatus.innerHTML = "❌ Select method & upload proof";
-    return;
-  }
-  
-  payStatus.innerHTML = "⏳ Sending payment...";
-  
+  if(!telegramId) return payStatus.innerHTML = "❌ Open from Telegram";
+  if(!payShot.files[0] || !payMethod.value) return payStatus.innerHTML = "❌ Missing data";
+
+  payStatus.innerHTML = "⏳ Sending...";
+
   try{
-    const image = await toBase64(file);
-    const payload = {
-      telegramId,
-      name,
-      username,
-      method: payMethod.value,
-      whatsapp: payWhatsapp.value || "N/A",
-      call: payCall.value || "N/A",
-      image,
-      type: "payment"
-    };
-    
-    console.log("Sending payment payload:", { ...payload, image: "base64_data_hidden" });
-    
-    const response = await fetch(BACKEND+"/unlock-promo", {
+    const image = await toBase64(payShot.files[0]);
+    const res = await fetch(BACKEND+"/unlock-promo",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload)
+      body:JSON.stringify({
+        telegramId,name,username,
+        method:payMethod.value,
+        whatsapp:payWhatsapp.value||"N/A",
+        call:payCall.value||"N/A",
+        image,type:"payment"
+      })
     });
-    
-    const result = await response.json();
-    console.log("Server response:", result);
-    
-    if(response.ok){
-      payStatus.innerHTML = "✅ Payment sent for review";
-      tg.showAlert("✅ Payment submitted successfully!");
-    } else {
-      throw new Error(result.error || "Failed to send");
-    }
-    
-  }catch(err){
-    console.error("Error submitting payment:", err);
-    payStatus.innerHTML = "❌ Error: " + err.message;
-    tg.showAlert("❌ Failed to submit. Please try again.");
+    if(!res.ok) throw new Error("Server rejected image");
+    payStatus.innerHTML = "✅ Payment sent";
+    tg.showAlert("Payment submitted ✅");
+  }catch(e){
+    payStatus.innerHTML = "❌ " + e.message;
   }
 }
 </script>
