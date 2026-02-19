@@ -22,6 +22,7 @@ button {
 }
 
 .primary { background:#22c55e; color:white; }
+.primary2 { background:#003506; color:white; }
 .secondary { background:#3b82f6; color:white; }
 .whatsapp { background:#25D366; color:white; }
 .telegram { background:#0088cc; color:white; }
@@ -84,9 +85,9 @@ input {
 <b>🔓 Unlock Promo Earnings</b><br><br>
 Choose how you want to unlock 👇
 </div>
-
 <div class="card">
-<button class="primary" onclick="showTask()">✅ Complete Simple Task</button>
+  <p> kindly choose one option above the two, whether you complete task or you purchase for promo access.</p>
+<button class="primary2" onclick="showTask()">✅ Complete Simple Task</button>
 <p style="text-align:center"><b>OR</b></p>
 <button class="secondary" onclick="showPurchase()">💳 Purchase Access</button>
 <button onclick="location.href='dashboard.html'">🔙 Back to dashboard</button>
@@ -95,9 +96,10 @@ Choose how you want to unlock 👇
 <!-- TASK -->
 <div class="card hidden" id="taskBox">
 <b>📌 Task</b><br><br>
-1️⃣ Join WhatsApp or Telegram group<br>
-2️⃣ Invite <b>10 people</b><br>
-3️⃣ Upload <b>screenshots or any proof</b><br><br>
+1️⃣ Choose the type of task you prefer.<br>
+2️⃣ Join WhatsApp or Telegram group<br>
+3️⃣ Invite or add <b>10 people</b><br>
+4️⃣ Upload <b>screenshots or any proof</b><br><br>
 
 <div class="taskSelect">
   <div id="optTelegram" class="taskOption" onclick="chooseTask('telegram')">
@@ -111,10 +113,10 @@ Choose how you want to unlock 👇
 <hr style="opacity:.2">
 
 <div id="whatsappBox" class="hidden">
-  <a href="https://chat.whatsapp.com/BhsFmqjNj49LoaUxrGQuKe" target="_blank">
+  <a href="https://chat.whatsapp.com/BorGaDGWXvE689SNOEXzQ7" target="_blank">
     <button class="whatsapp">📲 Join WhatsApp Group</button>
   </a>
-  <button class="copy" onclick="copyText('https://chat.whatsapp.com/BhsFmqjNj49LoaUxrGQuKe')">
+  <button class="copy" onclick="copyText('https://chat.whatsapp.com/BorGaDGWXvE689SNOEXzQ7')">
     📋 Copy WhatsApp Group Link
   </button>
   <input type="tel" id="taskWhatsapp" placeholder="Your WhatsApp number">
