@@ -76,6 +76,20 @@ async function updateBalances(balances, sha, message){
   );
 }
 
+/* ========================= FETCH NGN PER USD RATE ========================= */
+// Returns how many NGN = 1 USD (e.g. ~1600)
+async function fetchNgnPerUsd(){
+  try {
+    const r = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+    const data = await r.json();
+    const rate = data?.rates?.NGN;
+    if(rate && rate > 100) return rate;
+    return 1600; // fallback
+  } catch {
+    return 1600; // fallback
+  }
+}
+
 /* ========================= ADMIN AUTH ========================= */
 function authAdmin(req,res){
   if(req.headers["x-admin-password"] !== ADMIN_PASSWORD){
@@ -96,12 +110,19 @@ app.get("/admin",(req,res)=>res.sendFile(path.join(__dirname,"admin.html")));
 /* ========================= GET USER BALANCE ========================= */
 app.post("/get-balance", async (req,res)=>{
   const telegramId = req.body.telegramId ? String(req.body.telegramId) : null;
-  if(!telegramId) return res.json({ ngn: 0 });
+  if(!telegramId) return res.json({ ngn: 0, usdRate: 1600 });
 
-  const { balances } = await readBalances();
-  if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
+  try {
+    const { balances } = await readBalances();
+    if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
 
-  res.json(balances[telegramId]);
+    // Fetch and return the NGN-per-USD rate so the frontend uses the same rate
+    const usdRate = await fetchNgnPerUsd();
+
+    res.json({ ...balances[telegramId], usdRate });
+  } catch(err) {
+    res.status(500).json({ error: "Failed to read balance: " + err.message });
+  }
 });
 
 /* ========================= GENERATE PASSCODE ========================= */
@@ -145,27 +166,26 @@ app.post("/withdraw", async (req,res)=>{
     return res.status(400).json({ error:"Invalid or expired passcode" });
   }
 
-  attempts[telegramId] = 0; 
+  attempts[telegramId] = 0;
   delete passcodes[telegramId];
 
-  const safeAmount = Number(amount);
-  if(!safeAmount || safeAmount <= 0) return res.status(400).json({ error:"Invalid amount" });
+  // `amount` from the frontend is always in NGN (already converted before sending)
+  const amountNGN = Math.round(Number(amount));
+  if(!amountNGN || amountNGN <= 0) return res.status(400).json({ error:"Invalid amount" });
 
   const { balances, sha } = await readBalances();
   if(!balances[telegramId]) balances[telegramId] = { ngn:0 };
 
-  let amountNGN = safeAmount;
-  let usdAmount = 0;
-
-  if(method === "crypto"){
-    const r = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
-    const rate = (await r.json()).rates.USD || 0.0026;
-    usdAmount = safeAmount;
-    amountNGN = Math.round(safeAmount / rate);
-  }
-
   if(balances[telegramId].ngn < amountNGN)
     return res.status(400).json({ error:"Insufficient balance" });
+
+  // For crypto: calculate USD display amount using server-side rate
+  let usdDisplay = "";
+  if(method === "crypto"){
+    const ngnPerUsd = await fetchNgnPerUsd();
+    const usdAmount = (amountNGN / ngnPerUsd).toFixed(2);
+    usdDisplay = `($${usdAmount})`;
+  }
 
   const before = balances[telegramId].ngn;
   balances[telegramId].ngn -= amountNGN;
@@ -176,13 +196,13 @@ app.post("/withdraw", async (req,res)=>{
   await sendTelegram(`💸 WITHDRAW REQUEST
 User: ${telegramId}
 Method: ${method}
-Amount: ₦${amountNGN.toLocaleString()} ${usdAmount?`($${usdAmount})`:""}
+Amount: ₦${amountNGN.toLocaleString()} ${usdDisplay}
 Before: ₦${before.toLocaleString()}
 After: ₦${balances[telegramId].ngn.toLocaleString()}
 Details: ${JSON.stringify(details,null,2)}`, ADMIN_ID);
 
   // Notify user
-  await sendTelegram(`✅ Withdrawal request received.\nAmount: ₦${amountNGN.toLocaleString()}`, telegramId);
+  await sendTelegram(`✅ Withdrawal request received.\nAmount: ₦${amountNGN.toLocaleString()} ${usdDisplay}`, telegramId);
 
   res.json({ newBalance: balances[telegramId].ngn });
 });
@@ -205,12 +225,8 @@ Status: Pending review by admin
 `;
 
   try {
-    // Send to admin with photo on top
     await sendTelegramPhoto(ADMIN_ID, image, caption);
-
-    // Notify user
     await sendTelegram(`✅ Your ${type} submission has been received. Admin will review it shortly.`, telegramId);
-
     res.json({ success:true, message:"Submission sent to admin" });
   } catch(err){
     console.error(err);
