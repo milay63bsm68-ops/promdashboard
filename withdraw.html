@@ -164,7 +164,7 @@ if(!telegramId){
 }
 
 let balanceNGN = 0;
-let usdRate = 0;
+let ngnPerUsd = 0; // how many NGN = 1 USD (e.g. ~1600)
 
 // Show user info
 if(telegramId){
@@ -180,13 +180,18 @@ function showMsg(text, type="success"){
   msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
 }
 
-// Fetch USD rate
-async function fetchUsdRate(){
+// Fetch NGN per USD rate (how many naira is 1 dollar)
+// We fetch USD/NGN rate: base=USD, so rates.NGN = NGN per 1 USD
+async function fetchNgnPerUsd(){
   try {
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
+    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
     const data = await res.json();
-    return data.rates.USD || 0.0026;
-  } catch { return 0.0026; }
+    const rate = data?.rates?.NGN;
+    if(rate && rate > 100) return rate; // sanity check
+    return 1600; // fallback: ~₦1600 per $1
+  } catch {
+    return 1600; // fallback
+  }
 }
 
 // Load balance from server
@@ -201,21 +206,29 @@ async function loadBalance(){
     });
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
-    usdRate = await fetchUsdRate();
-    const usd = balanceNGN * usdRate;
 
-    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${usd.toFixed(2)}`;
+    // If server returns the USD rate, use it; otherwise fetch it
+    if(d?.usdRate && d.usdRate > 100){
+      ngnPerUsd = d.usdRate;
+    } else {
+      ngnPerUsd = await fetchNgnPerUsd();
+    }
 
-    if(balanceNGN < 5000 && usd < 20){
+    const balanceUsd = balanceNGN / ngnPerUsd;
+
+    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${balanceUsd.toFixed(2)}`;
+
+    // Show low balance warning if user can't meet EITHER minimum
+    if(balanceNGN < 5000 && balanceUsd < 20){
       lowBalanceMsg.classList.remove("hidden");
       withdrawForm.classList.add("hidden");
-    }else{
+    } else {
       withdrawForm.classList.remove("hidden");
       lowBalanceMsg.classList.add("hidden");
       withdrawBtn.disabled = true; // wait for passcode
     }
     showMsg("");
-  }catch(err){
+  } catch(err){
     showMsg("Failed to load balance: "+err.message, "error");
     withdrawForm.classList.add("hidden");
     lowBalanceMsg.classList.add("hidden");
@@ -246,10 +259,9 @@ generatePasscodeBtn.onclick = async () => {
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || "Failed to generate passcode");
     showMsg("✅ Passcode sent to your Telegram. Enter it below.", "success");
-
     passcodeContainer.classList.remove("hidden");
     withdrawBtn.disabled = false;
-  }catch(err){
+  } catch(err){
     showMsg("❌ "+err.message, "error");
     generatePasscodeBtn.disabled = false;
   }
@@ -265,16 +277,25 @@ withdrawBtn.onclick = async () => {
   if(!passcodeVal) return showMsg("Enter your passcode", "error");
 
   let amountNGN = 0;
+
   if(methodVal === "bank"){
     amountNGN = Number(bankAmount.value);
     if(amountNGN < 5000) return showMsg("Minimum bank withdrawal is ₦5,000", "error");
     if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
   }
+
   if(methodVal === "crypto"){
     const usd = Number(cryptoAmount.value);
+    if(!usd || usd <= 0) return showMsg("Enter a valid amount", "error");
     if(usd < 20) return showMsg("Minimum crypto withdrawal is $20", "error");
-    amountNGN = usd / usdRate;
-    if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
+
+    // Convert USD → NGN correctly: multiply by NGN-per-USD rate
+    amountNGN = usd * ngnPerUsd;
+
+    if(amountNGN > balanceNGN){
+      const availableUsd = (balanceNGN / ngnPerUsd).toFixed(2);
+      return showMsg(`Insufficient balance. You can withdraw up to $${availableUsd}`, "error");
+    }
   }
 
   showMsg("Submitting withdrawal…", "loading");
@@ -304,9 +325,9 @@ withdrawBtn.onclick = async () => {
 
     showMsg("✅ Withdrawal submitted successfully!", "success");
     balanceNGN = data.newBalance;
-    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN*usdRate).toFixed(2)}`;
+    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN / ngnPerUsd).toFixed(2)}`;
     withdrawBtn.disabled = true;
-  }catch(err){
+  } catch(err){
     showMsg("❌ Withdrawal failed: "+err.message, "error");
     withdrawBtn.disabled = false;
   }
