@@ -61,6 +61,59 @@ a {
   color:#3b82f6;
   text-decoration:underline;
 }
+
+/* Promo code & link display box */
+.promo-box {
+  display:flex;
+  align-items:center;
+  background:#0a1628;
+  border:1px solid #1e3a5f;
+  border-radius:10px;
+  padding:10px 14px;
+  margin:6px 0;
+  gap:10px;
+  word-break:break-all;
+}
+.promo-box .promo-label {
+  font-size:11px;
+  color:#64748b;
+  margin-bottom:2px;
+}
+.promo-box .promo-value {
+  font-size:14px;
+  color:#60a5fa;
+  font-family:monospace;
+  user-select:all;
+  cursor:text;
+  flex:1;
+}
+.promo-icon {
+  font-size:20px;
+  flex-shrink:0;
+}
+
+/* Locked promo notice */
+.locked-notice {
+  background:linear-gradient(135deg,#1a1a2e,#16213e);
+  border:1px dashed #f59e0b;
+  border-radius:12px;
+  padding:16px;
+  text-align:center;
+  margin-bottom:10px;
+}
+.locked-notice .lock-icon {
+  font-size:36px;
+  margin-bottom:8px;
+}
+.locked-notice p {
+  color:#cbd5e1;
+  font-size:14px;
+  line-height:1.6;
+  margin:0 0 4px 0;
+}
+.locked-notice strong {
+  color:#f59e0b;
+}
 </style>
 </head>
 
@@ -195,26 +248,51 @@ function checkPromo() {
   `;
 
   if (hasPromo) {
+    const promoCode = telegramId;
     const promoLink = `https://intelligentverificationlink.ct.ws?ref=${telegramId}`;
+
     content += `
       <b>🎯 Promo Access:</b> Enabled ✅<br><br>
 
-      <button class="copy" onclick="copyText('${telegramId}')">
+      <div class="promo-box">
+        <span class="promo-icon">🏷️</span>
+        <div style="flex:1;">
+          <div class="promo-label">Your Promo Code</div>
+          <div class="promo-value" id="promoCodeText">${promoCode}</div>
+        </div>
+      </div>
+
+      <button class="copy" onclick="copyText('${promoCode}', 'Promo code')">
         📋 Copy Promo Code
       </button>
 
-      <button class="copy" onclick="copyText('${promoLink}')">
+      <div class="promo-box" style="margin-top:12px;">
+        <span class="promo-icon">🔗</span>
+        <div style="flex:1;">
+          <div class="promo-label">Your Promo Link</div>
+          <div class="promo-value" id="promoLinkText"><a href="${promoLink}" target="_blank">${promoLink}</a></div>
+        </div>
+      </div>
+
+      <button class="copy" onclick="copyText('${promoLink}', 'Promo link')">
         🔗 Copy Promo Link
       </button>
-
-      <br><br>
-      <b>Promo Link:</b> <a href="${promoLink}" target="_blank">${promoLink}</a>
 
       <br><br>
       <small>Your promo code is your Telegram ID</small>
     `;
   } else {
     content += `
+      <div class="locked-notice">
+        <div class="lock-icon">🔒</div>
+        <p><strong>Promo Earning Access Not Unlocked Yet</strong></p>
+        <p>
+          You have not unlocked promo earnings access.<br>
+          Click the button below to get started and start earning
+          real money with your personal promo code!
+        </p>
+      </div>
+
       <button class="unlock" onclick="location.href='unlockpromo.html'">
         🔓 Unlock Promo Earnings
       </button>
@@ -224,9 +302,9 @@ function checkPromo() {
   promoContainer.innerHTML = content;
 }
 
-function copyText(text) {
+function copyText(text, label) {
   navigator.clipboard.writeText(text);
-  alert("Copied successfully!");
+  alert((label || "Text") + " copied successfully!");
 }
 
 function waitForPromoList() {
