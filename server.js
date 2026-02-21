@@ -478,6 +478,7 @@ app.post("/admin/update-balance", async (req, res) => {
     const usdRate = await fetchNgnPerUsd();
     const newNgn  = balances[telegramId].ngn;
 
+    /* ── Notify admin ── */
     await sendTelegram(
       `🛠 <b>ADMIN ACTION</b>\n` +
       `User: <code>${telegramId}</code>\n` +
@@ -486,6 +487,18 @@ app.post("/admin/update-balance", async (req, res) => {
       `Before: ₦${prev.toLocaleString()}\n` +
       `After:  ₦${newNgn.toLocaleString()} ($${(newNgn / usdRate).toFixed(2)})`,
       ADMIN_ID
+    );
+
+    /* ── FIX: Notify the user whose balance was changed ── */
+    await sendTelegram(
+      type === "deposit"
+        ? `💰 <b>Deposit Received!</b>\n\n` +
+          `✅ ₦${amt.toLocaleString()} ($${(amt / usdRate).toFixed(2)}) has been credited to your account.\n` +
+          `💳 New Balance: ₦${newNgn.toLocaleString()} ($${(newNgn / usdRate).toFixed(2)})`
+        : `💸 <b>Balance Updated</b>\n\n` +
+          `✅ ₦${amt.toLocaleString()} ($${(amt / usdRate).toFixed(2)}) has been deducted from your account.\n` +
+          `💳 New Balance: ₦${newNgn.toLocaleString()} ($${(newNgn / usdRate).toFixed(2)})`,
+      telegramId
     );
 
     res.json({
