@@ -2,134 +2,491 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>User Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earn Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://milay63bsm68-ops.github.io/repro/promolist.js"></script>
 
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
+:root {
+  --bg: #050a14;
+  --surface: #0b1526;
+  --surface2: #111e35;
+  --border: #1a2d4d;
+  --accent: #00e5a0;
+  --accent2: #3b9eff;
+  --accent3: #f59e0b;
+  --text: #e2eaf6;
+  --muted: #4a6080;
+  --danger: #ff4d6d;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  background:#020617;
-  color:white;
-  font-family:Arial,sans-serif;
-  padding:20px;
-  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 90px;
+  overflow-x: hidden;
 }
+
+/* ─── BACKGROUND EFFECT ─── */
+body::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  right: -200px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0,229,160,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -200px;
+  left: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(59,158,255,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── TOP HEADER ─── */
+.top-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(5,10,20,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.header-badge {
+  background: rgba(0,229,160,0.12);
+  border: 1px solid rgba(0,229,160,0.3);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* ─── CONTAINER ─── */
 .container {
-  max-width:480px;
-  margin:30px auto 0 auto;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px;
+  position: relative;
+  z-index: 1;
 }
+
+/* ─── PROFILE CARD ─── */
+.profile-card {
+  background: linear-gradient(135deg, var(--surface) 0%, #0d1e38 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(0,229,160,0.08) 0%, transparent 70%);
+}
+.avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  border: 2px solid rgba(0,229,160,0.3);
+}
+.profile-info { flex: 1; min-width: 0; }
+.profile-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.profile-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.profile-tag {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.online-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ─── BALANCE CARD ─── */
+.balance-card {
+  background: linear-gradient(135deg, #061a10 0%, #0a2218 50%, #051420 100%);
+  border: 1px solid rgba(0,229,160,0.25);
+  border-radius: 20px;
+  padding: 22px 20px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(0,229,160,0.12) 0%, transparent 70%);
+}
+.balance-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.balance-ngn {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.balance-usd {
+  font-size: 14px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-top: 4px;
+}
+.balance-icon {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 42px;
+  opacity: 0.25;
+}
+
+/* ─── SECTION TITLE ─── */
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 20px 0 10px 4px;
+}
+
+/* ─── CARD ─── */
 .card {
-  background:#0f172a;
-  padding:16px;
-  border-radius:14px;
-  margin-bottom:15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
 }
-button {
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  font-weight:bold;
-  cursor:pointer;
-  margin-top:10px;
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.withdraw { background:#3b82f6; color:white; }
-.unlock { background:#22c55e; color:white; }
-.copy { background:#1e40af; color:white; }
-.tools { background:#f59e0b; color:white; }
+.card-title span { font-size: 18px; }
 
-table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-  font-size:14px;
+/* ─── BUTTONS ─── */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
 }
-th, td {
-  border:1px solid #1e293b;
-  padding:8px;
-  text-align:center;
-}
-th {
-  background:#020617;
-}
-small {
-  color:#94a3b8;
-}
-a {
-  color:#3b82f6;
-  text-decoration:underline;
-}
+.btn:active { transform: scale(0.97); }
 
-/* Promo code & link display box */
+.btn-withdraw {
+  background: linear-gradient(135deg, #1e40af, var(--accent2));
+  color: white;
+  box-shadow: 0 4px 20px rgba(59,158,255,0.25);
+}
+.btn-unlock {
+  background: linear-gradient(135deg, #065f46, var(--accent));
+  color: white;
+  box-shadow: 0 4px 20px rgba(0,229,160,0.25);
+}
+.btn-copy {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--accent2);
+}
+.btn-tools {
+  background: linear-gradient(135deg, #78350f, var(--accent3));
+  color: white;
+  box-shadow: 0 4px 20px rgba(245,158,11,0.25);
+}
+.btn:hover { filter: brightness(1.1); }
+
+/* ─── PROMO BOX ─── */
 .promo-box {
-  display:flex;
-  align-items:center;
-  background:#0a1628;
-  border:1px solid #1e3a5f;
-  border-radius:10px;
-  padding:10px 14px;
-  margin:6px 0;
-  gap:10px;
-  word-break:break-all;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  gap: 10px;
 }
 .promo-box .promo-label {
-  font-size:11px;
-  color:#64748b;
-  margin-bottom:2px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 3px;
 }
 .promo-box .promo-value {
-  font-size:14px;
-  color:#60a5fa;
-  font-family:monospace;
-  user-select:all;
-  cursor:text;
-  flex:1;
+  font-size: 13px;
+  color: var(--accent2);
+  font-family: 'DM Mono', monospace;
+  user-select: all;
+  cursor: text;
+  flex: 1;
+  word-break: break-all;
 }
-.promo-icon {
-  font-size:20px;
-  flex-shrink:0;
+.promo-icon { font-size: 20px; flex-shrink: 0; }
+
+/* ─── LOCKED NOTICE ─── */
+.locked-notice {
+  background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.02));
+  border: 1px dashed rgba(245,158,11,0.4);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.locked-notice .lock-icon { font-size: 40px; margin-bottom: 10px; }
+.locked-notice p { color: #94a3b8; font-size: 13px; line-height: 1.7; margin: 0 0 4px; }
+.locked-notice strong { color: var(--accent3); }
+
+/* ─── EARNINGS TABLE ─── */
+.earn-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.earn-table th, .earn-table td {
+  border: 1px solid var(--border);
+  padding: 10px 8px;
+  text-align: center;
+}
+.earn-table th {
+  background: rgba(0,0,0,0.3);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.earn-table td:last-child { color: var(--accent); font-weight: 700; font-family: 'DM Mono', monospace; }
+.earn-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+a { color: var(--accent2); text-decoration: none; }
+
+/* ─── BOTTOM NAV ─── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: rgba(11, 21, 38, 0.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  padding: 10px 0 16px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: var(--muted);
+  border: none;
+  background: none;
+  font-family: 'Syne', sans-serif;
+}
+.nav-item.active { color: var(--accent); }
+.nav-item:active { transform: scale(0.92); }
+.nav-icon {
+  font-size: 22px;
+  transition: transform 0.2s ease;
+}
+.nav-item.active .nav-icon {
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+.nav-item:active .nav-icon { transform: scale(0.85); }
+.nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
-/* Locked promo notice */
-.locked-notice {
-  background:linear-gradient(135deg,#1a1a2e,#16213e);
-  border:1px dashed #f59e0b;
-  border-radius:12px;
-  padding:16px;
-  text-align:center;
-  margin-bottom:10px;
+/* ─── FADE IN ANIMATION ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.locked-notice .lock-icon {
-  font-size:36px;
-  margin-bottom:8px;
-}
-.locked-notice p {
-  color:#cbd5e1;
-  font-size:14px;
-  line-height:1.6;
-  margin:0 0 4px 0;
-}
-.locked-notice strong {
-  color:#f59e0b;
-}
+.profile-card { animation: fadeUp 0.4s ease forwards; }
+.balance-card { animation: fadeUp 0.5s ease forwards; }
+#promo { animation: fadeUp 0.6s ease forwards; }
+#actionCard { animation: fadeUp 0.7s ease forwards; }
 </style>
 </head>
-
 <body>
 
+<!-- TOP HEADER -->
+<div class="top-header">
+  <div class="brand">⚡ EarnDash</div>
+  <div class="header-badge">LIVE</div>
+</div>
+
+<!-- MAIN CONTENT -->
 <div class="container">
 
-  <div class="card" id="user"></div>
-  <div class="card" id="balance">Loading balance...</div>
-  <div class="card" id="promo"></div>
-
-  <div class="card" id="actionCard">
-    <!-- This will be swapped dynamically -->
+  <!-- Profile -->
+  <div class="profile-card">
+    <div class="avatar">👤</div>
+    <div class="profile-info">
+      <div class="profile-name" id="profileName">Loading...</div>
+      <div class="profile-meta">
+        <span class="profile-tag" id="profileUsername">—</span>
+        <span class="profile-tag" id="profileId">—</span>
+      </div>
+    </div>
+    <div class="online-dot"></div>
   </div>
 
+  <!-- Balance -->
+  <div class="balance-card" id="balance">
+    <div class="balance-label">Total Balance</div>
+    <div class="balance-ngn">₦0.00</div>
+    <div class="balance-usd">≈ $0.00</div>
+    <div class="balance-icon">💰</div>
+  </div>
+
+  <!-- Promo Section -->
+  <div class="section-title">Promo & Earnings</div>
+  <div class="card" id="promo">Loading promo...</div>
+
+  <!-- Action Card -->
+  <div class="section-title">Tools & Commission</div>
+  <div class="card" id="actionCard">Loading...</div>
+
 </div>
+
+<!-- BOTTOM NAVIGATION -->
+<nav class="bottom-nav">
+  <!-- ── MAIN NAV ITEMS ── Add more items here in the future by copying a nav-item block ── -->
+
+  <button class="nav-item active" onclick="scrollToTop()">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Home</span>
+  </button>
+
+  <a class="nav-item" href="https://t.me/intelligentpublicgroupsbot/explore" target="_blank">
+    <span class="nav-icon">👥</span>
+    <span class="nav-label">Groups</span>
+  </a>
+
+  <button class="nav-item" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
+    <span class="nav-icon">💸</span>
+    <span class="nav-label">Withdraw</span>
+  </button>
+
+  <button class="nav-item" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
+    <span class="nav-icon">🛠️</span>
+    <span class="nav-label">Tools</span>
+  </button>
+
+  <button class="nav-item" onclick="location.href='unlockpromo.html'">
+    <span class="nav-icon">🔓</span>
+    <span class="nav-label">Unlock</span>
+  </button>
+
+  <!-- ── ADD MORE NAV ITEMS BELOW THIS LINE ──
+  <a class="nav-item" href="YOUR_LINK_HERE" target="_blank">
+    <span class="nav-icon">EMOJI</span>
+    <span class="nav-label">LABEL</span>
+  </a>
+  ── END OF ADDITIONAL NAV ITEMS ── -->
+</nav>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -140,14 +497,25 @@ const telegramId = user ? String(user.id) : null;
 const name = user?.first_name || "Guest";
 const username = user?.username ? "@" + user.username : "No username";
 
-document.getElementById("user").innerHTML = `
-<b>Name:</b> ${name}<br>
-<b>Username:</b> ${username}<br>
-<b>Telegram ID:</b> ${telegramId || "N/A"}
-`;
+// Populate profile card
+document.getElementById("profileName").textContent = name;
+document.getElementById("profileUsername").textContent = username;
+document.getElementById("profileId").textContent = "ID: " + (telegramId || "N/A");
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── NAV ACTIVE STATE HELPER ──
+// Call setActiveNav(index) to highlight a nav item (0-based, left to right)
+function setActiveNav(index) {
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+}
 
 // ---------------------------
-// Fetch user balance from server
+// Fetch user balance
 // ---------------------------
 async function getUserBalance() {
   if (!telegramId) return 0;
@@ -179,29 +547,31 @@ async function loadBalance() {
   const usdRate = await fetchUsdRate();
 
   document.getElementById("balance").innerHTML = `
-    <b>Balance</b><br>
-    ₦${ngn.toLocaleString()} ≈ $${(ngn * usdRate).toFixed(2)}
+    <div class="balance-label">Total Balance</div>
+    <div class="balance-ngn">₦${ngn.toLocaleString()}</div>
+    <div class="balance-usd">≈ $${(ngn * usdRate).toFixed(2)} USD</div>
+    <div class="balance-icon">💰</div>
   `;
 
   document.getElementById("actionCard").innerHTML = `
-    <!-- Swapped: All Tools button replaces Withdraw position -->
-    <button class="tools" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
-      🛠️ Al hæçking tools & Links
+    <div class="card-title"><span>🛠️</span> All Earning Tools</div>
+
+    <button class="btn btn-tools" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
+      🛠️ All Hacking Tools & Links
     </button>
 
-    <!-- Earnings description -->
-    <div id="earnings" style="margin-top:18px;"></div>
+    <div style="margin-top:20px;" id="earnings"></div>
   `;
 
   document.getElementById("earnings").innerHTML = `
-    <b>💰 How Promo Earnings Work</b><br><br>
-    When someone buys any premium plan using <b>your personal promo code</b>,
-    you instantly earn commission as shown below 👇
-    <br><br>
+    <div class="card-title"><span>💰</span> Commission Structure</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;line-height:1.6;">
+      Share your promo code and earn commission every time someone upgrades their plan.
+    </p>
 
-    <table>
+    <table class="earn-table">
       <tr>
-        <th>Premium Plan</th>
+        <th>Plan</th>
         <th>User Pays</th>
         <th>You Earn</th>
       </tr>
@@ -223,10 +593,7 @@ async function loadBalance() {
     </table>
 
     <br>
-    <small>
-      📌 Share your promo link anywhere.  
-      Every successful purchase adds earnings to your balance.
-    </small>
+    <small>📌 Share your promo link anywhere. Every successful purchase adds earnings to your balance instantly.</small>
   `;
 }
 loadBalance();
@@ -240,11 +607,12 @@ function checkPromo() {
 
   const hasPromo = PROMO_LIST.includes(telegramId);
 
-  // Swap: Withdraw button replaces All Tools position in promo card
   let content = `
-    <button class="withdraw" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
-      💸 Withdraw
-    </button><br><br>
+    <div class="card-title"><span>🎯</span> Promo Access</div>
+
+    <button class="btn btn-withdraw" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
+      💸 Withdraw Earnings
+    </button><br>
   `;
 
   if (hasPromo) {
@@ -252,48 +620,49 @@ function checkPromo() {
     const promoLink = `https://intelligentverificationlink.ct.ws?ref=${telegramId}`;
 
     content += `
-      <b>🎯 Promo Access:</b> Enabled ✅<br><br>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0 6px;color:var(--accent);font-size:13px;font-weight:700;">
+        ✅ Promo Access Enabled
+      </div>
 
       <div class="promo-box">
         <span class="promo-icon">🏷️</span>
         <div style="flex:1;">
-          <div class="promo-label">Your Promo Code</div>
-          <div class="promo-value" id="promoCodeText">${promoCode}</div>
+          <div class="promo-label">Promo Code</div>
+          <div class="promo-value">${promoCode}</div>
         </div>
       </div>
 
-      <button class="copy" onclick="copyText('${promoCode}', 'Promo code')">
+      <button class="btn btn-copy" onclick="copyText('${promoCode}', 'Promo code')">
         📋 Copy Promo Code
       </button>
 
-      <div class="promo-box" style="margin-top:12px;">
+      <div class="promo-box" style="margin-top:10px;">
         <span class="promo-icon">🔗</span>
         <div style="flex:1;">
-          <div class="promo-label">Your Promo Link</div>
-          <div class="promo-value" id="promoLinkText"><a href="${promoLink}" target="_blank">${promoLink}</a></div>
+          <div class="promo-label">Promo Link</div>
+          <div class="promo-value"><a href="${promoLink}" target="_blank">${promoLink}</a></div>
         </div>
       </div>
 
-      <button class="copy" onclick="copyText('${promoLink}', 'Promo link')">
+      <button class="btn btn-copy" onclick="copyText('${promoLink}', 'Promo link')">
         🔗 Copy Promo Link
       </button>
 
-      <br><br>
+      <br>
       <small>Your promo code is your Telegram ID</small>
     `;
   } else {
     content += `
       <div class="locked-notice">
         <div class="lock-icon">🔒</div>
-        <p><strong>Promo Earning Access Not Unlocked Yet</strong></p>
+        <p><strong>Promo Earnings Not Unlocked</strong></p>
         <p>
-          You have not unlocked promo earnings access.<br>
-          Click the button below to get started and start earning
-          real money with your personal promo code!
+          You haven't unlocked promo earnings yet.<br>
+          Click below to get started and earn real money with your personal promo code!
         </p>
       </div>
 
-      <button class="unlock" onclick="location.href='unlockpromo.html'">
+      <button class="btn btn-unlock" onclick="location.href='unlockpromo.html'">
         🔓 Unlock Promo Earnings
       </button>
     `;
@@ -304,7 +673,17 @@ function checkPromo() {
 
 function copyText(text, label) {
   navigator.clipboard.writeText(text);
-  alert((label || "Text") + " copied successfully!");
+  // Small toast instead of alert
+  const toast = document.createElement('div');
+  toast.textContent = '✅ ' + (label || 'Text') + ' copied!';
+  toast.style.cssText = `
+    position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
+    background:#00e5a0;color:#050a14;padding:10px 20px;border-radius:50px;
+    font-family:'Syne',sans-serif;font-weight:700;font-size:13px;
+    z-index:999;animation:fadeUp 0.3s ease;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2000);
 }
 
 function waitForPromoList() {
@@ -315,6 +694,10 @@ function waitForPromoList() {
   }
 }
 waitForPromoList();
+
+// ── ADD MORE JAVASCRIPT FUNCTIONALITY BELOW ──
+// Example: Add a new page section, handle tab navigation, etc.
+// ── END OF ADDITIONAL JS ──
 </script>
 
 </body>
