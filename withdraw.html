@@ -2,320 +2,476 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Withdraw</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<title>Withdraw Earnings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
-* { box-sizing: border-box; }
+:root {
+  --bg: #050a14;
+  --surface: #0b1526;
+  --surface2: #111e35;
+  --border: #1a2d4d;
+  --accent: #00e5a0;
+  --accent2: #3b9eff;
+  --accent3: #f59e0b;
+  --text: #e2eaf6;
+  --muted: #4a6080;
+  --danger: #ff4d6d;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  background:#020617;
-  color:white;
-  font-family:Arial, sans-serif;
-  padding:14px;
-  margin:0;
-  overflow-x:hidden;
+  background: var(--bg); color: var(--text);
+  font-family: 'Syne', sans-serif; min-height: 100vh;
+  overflow-x: hidden; padding-bottom: 40px;
 }
-.container { max-width:420px; margin:0 auto; }
+body::before {
+  content: ''; position: fixed; top: -200px; right: -200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(59,158,255,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; bottom: -200px; left: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(0,229,160,0.05) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ─── HEADER ─── */
+.top-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5,10,20,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+}
+.back-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 10px; padding: 7px 14px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.back-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.page-title {
+  font-size: 16px; font-weight: 800;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* ─── CONTAINER ─── */
+.container {
+  max-width: 480px; margin: 0 auto;
+  padding: 20px 16px; position: relative; z-index: 1;
+}
+
+/* ─── PROFILE CARD ─── */
+.profile-card {
+  background: linear-gradient(135deg, var(--surface) 0%, #0d1e38 100%);
+  border: 1px solid var(--border); border-radius: 18px;
+  padding: 16px 18px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 12px;
+  position: relative; overflow: hidden;
+  animation: fadeUp 0.4s ease;
+}
+.profile-card::before {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 100px; height: 100px;
+  background: radial-gradient(circle, rgba(59,158,255,0.08) 0%, transparent 70%);
+}
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0; border: 2px solid rgba(59,158,255,0.3);
+}
+.profile-info { flex: 1; }
+.profile-name { font-size: 14px; font-weight: 700; }
+.profile-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+/* ─── BALANCE CARD ─── */
+.balance-card {
+  background: linear-gradient(135deg, #051420 0%, #0a1e38 100%);
+  border: 1px solid rgba(59,158,255,0.25); border-radius: 18px;
+  padding: 20px; margin-bottom: 14px;
+  position: relative; overflow: hidden;
+  animation: fadeUp 0.45s ease;
+}
+.balance-card::before {
+  content: ''; position: absolute; top: -20px; right: -20px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(59,158,255,0.12) 0%, transparent 70%);
+}
+.balance-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: var(--accent2); text-transform: uppercase; margin-bottom: 6px; }
+.balance-ngn   { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+.balance-usd   { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 4px; }
+.balance-icon  { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 40px; opacity: 0.2; }
+
+/* ─── CARD ─── */
 .card {
-  background:#0f172a;
-  padding:14px;
-  border-radius:14px;
-  margin-bottom:12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 20px; margin-bottom: 14px;
+  animation: fadeUp 0.5s ease;
 }
-h3 { margin:0 0 8px 0; font-size:14px; font-weight:bold; }
+.card-title {
+  font-size: 15px; font-weight: 700; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title span { font-size: 18px; }
+
+/* ─── LOW BALANCE NOTICE ─── */
+.low-notice {
+  background: linear-gradient(135deg, rgba(255,77,109,0.06), rgba(255,77,109,0.02));
+  border: 1px dashed rgba(255,77,109,0.4); border-radius: 16px;
+  padding: 24px; text-align: center; margin-bottom: 14px;
+  animation: fadeUp 0.5s ease;
+}
+.low-notice .icon { font-size: 44px; margin-bottom: 12px; }
+.low-notice h3 { font-size: 16px; color: var(--danger); margin-bottom: 8px; }
+.low-notice p  { font-size: 13px; color: var(--muted); line-height: 1.8; }
+
+/* ─── INPUTS ─── */
 input, select {
-  width:100%;
-  padding:10px;
-  margin-top:6px;
-  border-radius:10px;
-  border:none;
-  background:#020617;
-  color:white;
-  font-size:14px;
-  height: 50px;
+  width: 100%; padding: 13px 14px; margin-top: 10px;
+  border-radius: 12px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  font-family: 'Syne', sans-serif; font-size: 14px;
+  outline: none; transition: border-color 0.2s;
 }
-button {
-  width:100%;
-  padding:12px;
-  margin-top:12px;
-  border:none;
-  border-radius:12px;
-  background:#3b82f6;
-  color:white;
-  font-weight:bold;
-  font-size:14px;
+input:focus, select:focus { border-color: var(--accent2); }
+select option { background: #0b1526; }
+.field-group { margin-top: 16px; }
+.field-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: 0; }
+.field-hint  { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* ─── PASSCODE SECTION ─── */
+.passcode-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.passcode-note { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+.passcode-note a { color: var(--accent2); }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 15px; border: none; border-radius: 14px;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; margin-top: 12px; transition: all 0.2s ease;
+  letter-spacing: 0.3px;
 }
-button:disabled { opacity:0.5; }
-.msg { margin-top:10px; padding:8px; border-radius:8px; font-size:13px; }
-.error { background:#ef4444; }
-.success { background:#22c55e; }
-.loading { background:#facc15; color:black; }
-.small { font-size:12px; opacity:0.75; }
-.small2 { font-size:20px; opacity:0.75; }
-.hidden { display:none; }
+.btn:active { transform: scale(0.97); }
+.btn-blue   { background: linear-gradient(135deg, #1e40af, var(--accent2)); color: white; box-shadow: 0 4px 20px rgba(59,158,255,0.25); }
+.btn-green  { background: linear-gradient(135deg, #065f46, var(--accent));  color: white; box-shadow: 0 4px 20px rgba(0,229,160,0.2); }
+.btn-dark   { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none !important; }
+.btn:not(:disabled):hover { filter: brightness(1.1); }
+
+/* ─── STATUS ─── */
+.msg {
+  margin-top: 12px; padding: 13px 16px; border-radius: 12px;
+  font-size: 13px; line-height: 1.5; display: none;
+}
+.msg.show    { display: block; }
+.msg.error   { background: rgba(255,77,109,0.1);  border: 1px solid rgba(255,77,109,0.3);  color: var(--danger);  }
+.msg.success { background: rgba(0,229,160,0.1);   border: 1px solid rgba(0,229,160,0.3);   color: var(--accent);  }
+.msg.loading { background: rgba(245,158,11,0.1);  border: 1px solid rgba(245,158,11,0.3);  color: var(--accent3); }
+
+.hidden { display: none !important; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 </style>
 </head>
-
 <body>
+
+<!-- HEADER -->
+<div class="top-header">
+  <button class="back-btn" onclick="location.href='dashboard.html'">← Back</button>
+  <div class="page-title">💸 Withdraw Earnings</div>
+</div>
 
 <div class="container">
 
-  <!-- USER INFO -->
-  <div class="card" id="userInfo">Loading user…</div>
-
-  <!-- BALANCE -->
-  <div class="card" id="balanceBox">Loading balance…</div>
-
-  <!-- MESSAGE FOR LOW BALANCE -->
-  <div class="card hidden" id="lowBalanceMsg">
-    <div class="msg error">
-      Minimum balance required to withdraw:<br>
-      ₦5,000 for bank transfer<br>
-      $20 for crypto
+  <!-- PROFILE -->
+  <div class="profile-card">
+    <div class="avatar">👤</div>
+    <div class="profile-info">
+      <div class="profile-name" id="pName">Loading...</div>
+      <div class="profile-meta" id="pMeta">—</div>
     </div>
-   <button onclick="window.location.href='https://t.me/intelpremiumbot/premiumdash'">Go Back</button>
   </div>
 
-  <!-- WITHDRAW FORM -->
-  <div class="card hidden" id="withdrawForm">
+  <!-- BALANCE -->
+  <div class="balance-card" id="balanceCard">
+    <div class="balance-label">Available Balance</div>
+    <div class="balance-ngn" id="balNgn">Loading…</div>
+    <div class="balance-usd" id="balUsd"></div>
+    <div class="balance-icon">💸</div>
+  </div>
 
-    <h3>Withdrawal Method</h3>
-    <select id="method">
-      <option value="">Select method</option>
-      <option value="bank">Bank Transfer (₦)</option>
-      <option value="crypto">Crypto (BNB BEP20)</option>
-    </select>
+  <!-- LOW BALANCE (hidden until checked) -->
+  <div class="low-notice hidden" id="lowMsg">
+    <div class="icon">⚠️</div>
+    <h3>Balance Too Low</h3>
+    <p>
+      You need at least:<br>
+      <strong style="color:var(--text);">₦5,000</strong> for bank transfer<br>
+      <strong style="color:var(--text);">$20</strong> for crypto withdrawal
+    </p>
+    <a href="https://intelgroup.onrender.com/deposit.html" target="_blank">
+      <button class="btn btn-green" style="margin-top:14px;">💳 Make a Deposit</button>
+    </a>
+  </div>
 
-    <!-- BANK -->
-    <div id="bankFields" class="hidden">
-      <h3 style="margin-top:10px">Bank Details</h3>
-      <select id="bank">
-        <option value="">Select Bank</option>
-        <option>Opay</option>
-        <option>PalmPay</option>
-        <option>Moniepoint</option>
-        <option>GTBank</option>
-        <option>Access Bank</option>
-        <option>Zenith Bank</option>
-        <option>UBA</option>
-        <option>First Bank</option>
-        <option>FCMB</option>
-        <option>Other</option>
+  <!-- WITHDRAW FORM (hidden until balance loaded) -->
+  <div class="card hidden" id="withdrawCard">
+    <div class="card-title"><span>📋</span> Withdrawal Details</div>
+
+    <!-- METHOD -->
+    <div class="field-group">
+      <span class="field-label">Withdrawal Method</span>
+      <select id="method">
+        <option value="">-- Select method --</option>
+        <option value="bank">🏦 Bank Transfer (₦ Naira)</option>
+        <option value="crypto">💎 Crypto — BNB BEP20 ($)</option>
       </select>
-      <input id="otherBank" placeholder="Other bank name" class="hidden">
-      <input id="acctName" placeholder="Account Name">
-      <input type="number" id="acctNumber" placeholder="Account Number">
-      <input id="bankAmount" type="number" placeholder="Amount (₦)">
-      <div class="small">Minimum: ₦5,000</div>
     </div>
 
-    <!-- CRYPTO -->
-    <div id="cryptoFields" class="hidden">
-      <h3 style="margin-top:10px">Crypto Details</h3>
-      <input id="wallet" placeholder="BNB Smart Chain (BEP20) Address">
-      <input id="cryptoAmount" type="number" placeholder="Amount ($)">
-      <div class="small">Minimum: $20</div>
-    </div>
-
-    <!-- CONTACT -->
-    <h3 style="margin-top:10px">Contact Details</h3>
-    <input type="tel" id="whatsapp" placeholder="WhatsApp Number">
-    <input type="tel" id="phone" placeholder="Calling Number">
-
-    <!-- PASSCODE -->
-    <button id="generatePasscodeBtn">Generate Withdrawal Passcode</button>
-    <div id="passcodeContainer" class="hidden">
-      <input id="passcode" placeholder="Enter passcode">
-      <div class="small2">
-        Check your Telegram bot for the code: 
-        <a href="https://t.me/intelpremiumbot" target="_blank">@intelpremiumbot</a>
+    <!-- BANK FIELDS -->
+    <div id="bankFields" class="hidden">
+      <div class="field-group">
+        <span class="field-label">Bank Name</span>
+        <select id="bank">
+          <option value="">Select Bank</option>
+          <option>Opay</option><option>PalmPay</option><option>Moniepoint</option>
+          <option>GTBank</option><option>Access Bank</option><option>Zenith Bank</option>
+          <option>UBA</option><option>First Bank</option><option>FCMB</option>
+          <option>Other</option>
+        </select>
+        <input id="otherBank" placeholder="Bank name" class="hidden" style="margin-top:8px;">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Account Name</span>
+        <input id="acctName" placeholder="Full account name">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Account Number</span>
+        <input id="acctNumber" type="number" placeholder="10-digit account number">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Amount (₦)</span>
+        <input id="bankAmount" type="number" placeholder="Amount to withdraw">
+        <div class="field-hint">Minimum: ₦5,000</div>
       </div>
     </div>
 
-    <button id="withdrawBtn" disabled>Submit Withdrawal</button>
-    <div id="msgBox"></div>
+    <!-- CRYPTO FIELDS -->
+    <div id="cryptoFields" class="hidden">
+      <div class="field-group">
+        <span class="field-label">BNB Wallet Address (BEP20)</span>
+        <input id="wallet" placeholder="0x...">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Amount ($)</span>
+        <input id="cryptoAmount" type="number" placeholder="Amount in USD">
+        <div class="field-hint">Minimum: $20</div>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="field-group">
+      <span class="field-label">Contact Details</span>
+      <input type="tel" id="whatsapp" placeholder="WhatsApp Number">
+      <input type="tel" id="phone"    placeholder="Calling Number" style="margin-top:8px;">
+    </div>
+
+    <!-- PASSCODE -->
+    <div class="passcode-section">
+      <span class="field-label">Security Passcode</span>
+      <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6;">
+        Generate a one-time passcode sent to your Telegram. This confirms it is really you authorising this withdrawal.
+      </p>
+      <button class="btn btn-dark" id="genPasscodeBtn">🔑 Generate Passcode</button>
+
+      <div class="hidden" id="passcodeBox">
+        <input id="passcode" type="number" placeholder="Enter 6-digit passcode from Telegram">
+        <div class="passcode-note">
+          Check <a href="https://t.me/intelpremiumbot" target="_blank">@intelpremiumbot</a> on Telegram.
+          Code expires in 5 minutes.
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-blue" id="withdrawBtn" disabled>💸 Submit Withdrawal</button>
+    <div class="msg" id="msgBox"></div>
   </div>
 
-</div>
+</div><!-- /container -->
 
 <script>
-const API = "/withdraw";
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 
-const user = tg?.initDataUnsafe?.user;
+const user       = tg?.initDataUnsafe?.user;
 const telegramId = user ? String(user.id) : null;
 
-const userInfo = document.getElementById("userInfo");
-const balanceBox = document.getElementById("balanceBox");
-const msgBox = document.getElementById("msgBox");
-const withdrawBtn = document.getElementById("withdrawBtn");
-const withdrawForm = document.getElementById("withdrawForm");
-const lowBalanceMsg = document.getElementById("lowBalanceMsg");
-const generatePasscodeBtn = document.getElementById("generatePasscodeBtn");
-const passcodeContainer = document.getElementById("passcodeContainer");
-const passcodeInput = document.getElementById("passcode");
+/* ─── PROFILE ─── */
+document.getElementById("pName").textContent = user?.first_name || "Guest";
+document.getElementById("pMeta").textContent =
+  (user?.username ? "@" + user.username : "No username") + " · ID: " + (telegramId || "N/A");
 
-if(!telegramId){
-  userInfo.innerHTML = "❌ Please open this page from the Telegram WebApp.";
+if (!telegramId) {
+  document.getElementById("balNgn").textContent = "❌ Open from Telegram";
 }
 
+/* ─── STATE ─── */
 let balanceNGN = 0;
-let ngnPerUsd = 1600; // NGN per $1, updated from server
+let ngnPerUsd  = 1600;
 
-// Show user info
-if(telegramId){
-  userInfo.innerHTML = `
-  <b>Name:</b> ${user?.first_name || "N/A"}<br>
-  <b>Username:</b> ${user?.username ? "@"+user.username : "N/A"}<br>
-  <b>ID:</b> ${telegramId}
-  `;
+/* ─── STATUS HELPERS ─── */
+const msgBox = document.getElementById("msgBox");
+function showMsg(text, type) {
+  if (!text) { msgBox.className = "msg"; return; }
+  msgBox.textContent = text;
+  msgBox.className   = "msg show " + type;
 }
 
-function showMsg(text, type="success"){
-  msgBox.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
-}
-
-// Load balance from server (server also returns ngnPerUsd)
-async function loadBalance(){
-  if(!telegramId) return;
-  showMsg("Loading balance…", "loading");
+/* ─── LOAD BALANCE ─── */
+async function loadBalance() {
+  if (!telegramId) return;
   try {
     const r = await fetch("/get-balance", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ telegramId })
     });
     const d = await r.json();
     balanceNGN = d?.ngn || 0;
+    if (d?.usdRate && d.usdRate > 100) ngnPerUsd = d.usdRate;
 
-    // Use rate from server (same rate used server-side), fallback to 1600
-    if(d?.usdRate && d.usdRate > 100){
-      ngnPerUsd = d.usdRate;
-    }
+    const usd = balanceNGN / ngnPerUsd;
+    document.getElementById("balNgn").textContent = "₦" + balanceNGN.toLocaleString();
+    document.getElementById("balUsd").textContent = "≈ $" + usd.toFixed(2) + " USD";
 
-    const balanceUsd = balanceNGN / ngnPerUsd;
+    const canBank   = balanceNGN >= 5000;
+    const canCrypto = usd >= 20;
 
-    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${balanceUsd.toFixed(2)}`;
-
-    // Show low balance warning only if user can't meet EITHER minimum
-    const canBank = balanceNGN >= 5000;
-    const canCrypto = balanceUsd >= 20;
-
-    if(!canBank && !canCrypto){
-      lowBalanceMsg.classList.remove("hidden");
-      withdrawForm.classList.add("hidden");
+    if (!canBank && !canCrypto) {
+      document.getElementById("lowMsg").classList.remove("hidden");
     } else {
-      withdrawForm.classList.remove("hidden");
-      lowBalanceMsg.classList.add("hidden");
-      withdrawBtn.disabled = true; // wait for passcode
+      document.getElementById("withdrawCard").classList.remove("hidden");
     }
-    showMsg("");
-  } catch(err){
-    showMsg("Failed to load balance: "+err.message, "error");
-    withdrawForm.classList.add("hidden");
-    lowBalanceMsg.classList.add("hidden");
+  } catch (err) {
+    document.getElementById("balNgn").textContent = "Error";
+    showMsg("Failed to load balance: " + err.message, "error");
   }
 }
 loadBalance();
 
-// Show/hide fields
-method.onchange = () => {
-  bankFields.style.display = method.value==="bank" ? "block" : "none";
-  cryptoFields.style.display = method.value==="crypto" ? "block" : "none";
+/* ─── FIELD TOGGLES ─── */
+document.getElementById("method").onchange = function () {
+  document.getElementById("bankFields").classList.toggle("hidden",   this.value !== "bank");
+  document.getElementById("cryptoFields").classList.toggle("hidden", this.value !== "crypto");
 };
-bank.onchange = () => {
-  otherBank.style.display = bank.value==="Other" ? "block" : "none";
+document.getElementById("bank").onchange = function () {
+  document.getElementById("otherBank").classList.toggle("hidden", this.value !== "Other");
 };
 
-// Generate passcode
-generatePasscodeBtn.onclick = async () => {
-  if(!telegramId) return;
-  showMsg("Generating passcode…","loading");
-  generatePasscodeBtn.disabled = true;
-  try{
-    const res = await fetch("/generate-passcode", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ telegramId })
+/* ─── GENERATE PASSCODE ─── */
+const genBtn       = document.getElementById("genPasscodeBtn");
+const passcodeBox  = document.getElementById("passcodeBox");
+const withdrawBtn  = document.getElementById("withdrawBtn");
+
+genBtn.onclick = async () => {
+  if (!telegramId) return showMsg("Open from Telegram.", "error");
+  showMsg("⏳ Sending passcode to your Telegram...", "loading");
+  genBtn.disabled = true;
+
+  try {
+    const r = await fetch("/generate-passcode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegramId, purpose: "withdraw" })
     });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || "Failed to generate passcode");
-    showMsg("✅ Passcode sent to your Telegram. Enter it below.", "success");
-    passcodeContainer.classList.remove("hidden");
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Failed");
+
+    showMsg("✅ Passcode sent! Check @intelpremiumbot on Telegram.", "success");
+    passcodeBox.classList.remove("hidden");
     withdrawBtn.disabled = false;
-  } catch(err){
-    showMsg("❌ "+err.message, "error");
-    generatePasscodeBtn.disabled = false;
+    genBtn.textContent   = "🔁 Resend Passcode";
+    genBtn.disabled      = false;
+  } catch (err) {
+    showMsg("❌ " + err.message, "error");
+    genBtn.disabled = false;
   }
 };
 
-// Withdraw
+/* ─── SUBMIT WITHDRAWAL ─── */
 withdrawBtn.onclick = async () => {
-  if(!telegramId) return;
-  const methodVal = method.value;
-  if(!methodVal) return showMsg("Select withdrawal method", "error");
+  if (!telegramId) return showMsg("Open from Telegram.", "error");
 
-  const passcodeVal = passcodeInput.value.trim();
-  if(!passcodeVal) return showMsg("Enter your passcode", "error");
+  const methodVal   = document.getElementById("method").value;
+  const passcodeVal = document.getElementById("passcode").value.trim();
 
-  // amountNGN is always sent to server in NGN
+  if (!methodVal)   return showMsg("Select a withdrawal method.", "error");
+  if (!passcodeVal) return showMsg("Enter the passcode from Telegram.", "error");
+
   let amountNGN = 0;
 
-  if(methodVal === "bank"){
-    amountNGN = Number(bankAmount.value);
-    if(!amountNGN || amountNGN <= 0) return showMsg("Enter a valid amount", "error");
-    if(amountNGN < 5000) return showMsg("Minimum bank withdrawal is ₦5,000", "error");
-    if(amountNGN > balanceNGN) return showMsg("Insufficient balance", "error");
+  if (methodVal === "bank") {
+    amountNGN = Number(document.getElementById("bankAmount").value);
+    if (!amountNGN || amountNGN <= 0) return showMsg("Enter a valid amount.", "error");
+    if (amountNGN < 5000)             return showMsg("Minimum bank withdrawal is ₦5,000.", "error");
+    if (amountNGN > balanceNGN)       return showMsg("Insufficient balance.", "error");
   }
 
-  if(methodVal === "crypto"){
-    const usd = Number(cryptoAmount.value);
-    if(!usd || usd <= 0) return showMsg("Enter a valid amount", "error");
-    if(usd < 20) return showMsg("Minimum crypto withdrawal is $20", "error");
-
-    // Convert USD → NGN: multiply by how many naira per dollar
+  if (methodVal === "crypto") {
+    const usd = Number(document.getElementById("cryptoAmount").value);
+    if (!usd || usd <= 0) return showMsg("Enter a valid amount.", "error");
+    if (usd < 20)         return showMsg("Minimum crypto withdrawal is $20.", "error");
     amountNGN = Math.round(usd * ngnPerUsd);
-
-    if(amountNGN > balanceNGN){
-      const availableUsd = (balanceNGN / ngnPerUsd).toFixed(2);
-      return showMsg(`Insufficient balance. You can withdraw up to $${availableUsd}`, "error");
+    if (amountNGN > balanceNGN) {
+      return showMsg(`Insufficient balance. Max: $${(balanceNGN / ngnPerUsd).toFixed(2)}`, "error");
     }
   }
 
-  showMsg("Submitting withdrawal…", "loading");
+  showMsg("⏳ Submitting withdrawal...", "loading");
   withdrawBtn.disabled = true;
 
-  try{
-    const res = await fetch(API, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
+  const bankEl = document.getElementById("bank");
+
+  try {
+    const r = await fetch("/withdraw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         telegramId,
-        method: methodVal,
-        amount: amountNGN, // always NGN
+        method:   methodVal,
+        amount:   amountNGN,
         passcode: passcodeVal,
-        details:{
-          bank: bank.value==="Other" ? otherBank.value : bank.value,
-          accountName: acctName.value,
-          accountNumber: acctNumber.value,
-          wallet: wallet.value,
-          whatsapp: whatsapp.value,
-          phone: phone.value
+        details: {
+          bank:          bankEl.value === "Other" ? document.getElementById("otherBank").value : bankEl.value,
+          accountName:   document.getElementById("acctName").value,
+          accountNumber: document.getElementById("acctNumber").value,
+          wallet:        document.getElementById("wallet").value,
+          whatsapp:      document.getElementById("whatsapp").value,
+          phone:         document.getElementById("phone").value
         }
       })
     });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || "Withdrawal failed");
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Withdrawal failed");
 
-    showMsg("✅ Withdrawal submitted successfully!", "success");
-    balanceNGN = data.newBalance;
-    balanceBox.innerHTML = `<b>Balance:</b><br>₦${balanceNGN.toLocaleString()} ≈ $${(balanceNGN / ngnPerUsd).toFixed(2)}`;
-    withdrawBtn.disabled = true;
-  } catch(err){
-    showMsg("❌ Withdrawal failed: "+err.message, "error");
+    balanceNGN = d.newBalance;
+    document.getElementById("balNgn").textContent = "₦" + balanceNGN.toLocaleString();
+    document.getElementById("balUsd").textContent = "≈ $" + (balanceNGN / ngnPerUsd).toFixed(2) + " USD";
+
+    showMsg("✅ Withdrawal submitted! You will be paid shortly.", "success");
+  } catch (err) {
+    showMsg("❌ " + err.message, "error");
     withdrawBtn.disabled = false;
   }
 };
