@@ -7,6 +7,17 @@
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://milay63bsm68-ops.github.io/repro/promolist.js"></script>
+<script>
+/* Defined early so inline onclick="openDeposit()" always works */
+function openDeposit() {
+  var depositUrl = 'https://intelgroup.onrender.com/deposit.html';
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+    window.Telegram.WebApp.openLink(depositUrl);
+  } else {
+    window.location.href = depositUrl;
+  }
+}
+</script>
 
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
@@ -347,7 +358,7 @@ a { color: var(--accent2); text-decoration: none; }
     <div class="balance-tap-hint">👆 Tap to deposit or withdraw</div>
     <!-- Deposit & Withdraw buttons (hidden until tap) -->
     <div class="balance-actions" id="balanceActions">
-      <button class="bal-btn bal-btn-deposit" onclick="event.stopPropagation(); tg.openLink('https://intelgroup.onrender.com/deposit.html')">
+      <button class="bal-btn bal-btn-deposit" onclick="event.stopPropagation(); openDeposit()">
         💳 Deposit
       </button>
       <button class="bal-btn bal-btn-withdraw" onclick="event.stopPropagation(); location.href='withdraw.html'">
@@ -378,7 +389,7 @@ a { color: var(--accent2); text-decoration: none; }
     <span class="nav-label">Groups</span>
   </a>
 
-  <button class="nav-item" onclick="tg.openLink('https://intelgroup.onrender.com/deposit.html')">
+  <button class="nav-item" onclick="openDeposit()">
     <span class="nav-icon">💳</span>
     <span class="nav-label">Deposit</span>
   </button>
