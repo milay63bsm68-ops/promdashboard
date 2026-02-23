@@ -172,7 +172,6 @@ body::after {
   gap: 6px; padding: 12px 10px; border: none; border-radius: 12px;
   font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
   cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.3px;
-  text-decoration: none;
 }
 .bal-btn:active { transform: scale(0.96); }
 .bal-btn-deposit {
@@ -348,9 +347,9 @@ a { color: var(--accent2); text-decoration: none; }
     <div class="balance-tap-hint">👆 Tap to deposit or withdraw</div>
     <!-- Deposit & Withdraw buttons (hidden until tap) -->
     <div class="balance-actions" id="balanceActions">
-      <a class="bal-btn bal-btn-deposit" href="https://intelgroup.onrender.com/deposit.html" target="_blank">
+      <button class="bal-btn bal-btn-deposit" onclick="event.stopPropagation(); tg.openLink('https://intelgroup.onrender.com/deposit.html')">
         💳 Deposit
-      </a>
+      </button>
       <button class="bal-btn bal-btn-withdraw" onclick="event.stopPropagation(); location.href='withdraw.html'">
         💸 Withdraw
       </button>
@@ -379,10 +378,10 @@ a { color: var(--accent2); text-decoration: none; }
     <span class="nav-label">Groups</span>
   </a>
 
-  <a class="nav-item" href="https://intelgroup.onrender.com/deposit.html" target="_blank">
+  <button class="nav-item" onclick="tg.openLink('https://intelgroup.onrender.com/deposit.html')">
     <span class="nav-icon">💳</span>
     <span class="nav-label">Deposit</span>
-  </a>
+  </button>
 
   <button class="nav-item" onclick="location.href='withdraw.html'">
     <span class="nav-icon">💸</span>
@@ -532,7 +531,7 @@ function checkPromo() {
         <span class="promo-icon">🔗</span>
         <div style="flex:1;">
           <div class="promo-label">Promo Link</div>
-          <div class="promo-value"><a href="${promoLink}" target="_blank">${promoLink}</a></div>
+          <div class="promo-value">${promoLink}</div>
         </div>
       </div>
 
