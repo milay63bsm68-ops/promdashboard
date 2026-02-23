@@ -3,297 +3,616 @@
 <head>
 <meta charset="UTF-8">
 <title>Unlock Promo Earnings</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
-body { background:#020617; color:white; font-family:Arial,sans-serif; padding:20px; }
-.container { max-width:480px; margin:auto; }
-.card { background:#0f172a; padding:16px; border-radius:14px; margin-bottom:15px; }
+:root {
+  --bg: #050a14;
+  --surface: #0b1526;
+  --surface2: #111e35;
+  --border: #1a2d4d;
+  --accent: #00e5a0;
+  --accent2: #3b9eff;
+  --accent3: #f59e0b;
+  --text: #e2eaf6;
+  --muted: #4a6080;
+  --danger: #ff4d6d;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-button {
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  font-weight:bold;
-  margin-top:10px;
-  cursor:pointer;
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Syne', sans-serif; min-height: 100vh;
+  overflow-x: hidden; padding-bottom: 40px;
+}
+body::before {
+  content: ''; position: fixed; top: -200px; right: -200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,229,160,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; bottom: -200px; left: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(59,158,255,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
 }
 
-.primary { background:#22c55e; color:white; }
-.primary2 { background:#003506; color:white; }
-.secondary { background:#3b82f6; color:white; }
-.whatsapp { background:#25D366; color:white; }
-.telegram { background:#0088cc; color:white; }
-.copy { background:#334155; color:white; font-size:13px; }
-
-input {
-  width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  margin-top:10px;
-  background:#020617;
-  color:white;
+/* ─── HEADER ─── */
+.top-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5,10,20,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+}
+.back-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 10px; padding: 7px 14px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.back-btn:hover { border-color: var(--accent); color: var(--accent); }
+.page-title {
+  font-size: 16px; font-weight: 800;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 
-.status { margin-top:10px; font-size:14px; text-align:center; }
-.hidden { display:none; }
-
-.taskSelect {
-  display:flex;
-  gap:10px;
-  margin-top:10px;
+/* ─── CONTAINER ─── */
+.container {
+  max-width: 480px; margin: 0 auto;
+  padding: 20px 16px; position: relative; z-index: 1;
 }
 
-.taskOption {
-  flex:1;
-  padding:14px;
-  text-align:center;
-  border-radius:12px;
-  background:#020617;
-  cursor:pointer;
-  font-weight:bold;
-  border:2px solid transparent;
+/* ─── PROFILE ROW ─── */
+.profile-card {
+  background: linear-gradient(135deg, var(--surface) 0%, #0d1e38 100%);
+  border: 1px solid var(--border); border-radius: 18px;
+  padding: 16px 18px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 12px;
+  position: relative; overflow: hidden;
+  animation: fadeUp 0.4s ease;
 }
-
-.taskOption.active {
-  border-color:#22c55e;
-  background:#052e16;
+.profile-card::before {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 100px; height: 100px;
+  background: radial-gradient(circle, rgba(0,229,160,0.08) 0%, transparent 70%);
 }
-
-.addressBox {
-  margin-top:12px;
-  padding:14px;
-  background:#020617;
-  border-radius:10px;
-  font-size:14px;
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0; border: 2px solid rgba(0,229,160,0.3);
 }
+.profile-info { flex: 1; }
+.profile-name { font-size: 14px; font-weight: 700; }
+.profile-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 3px; }
 
-.amount { color:#22c55e; font-weight:bold; }
-.small { font-size:12px; opacity:.85; }
+/* ─── BALANCE DISPLAY ─── */
+.balance-strip {
+  background: linear-gradient(135deg, #061a10 0%, #0a2218 50%, #051420 100%);
+  border: 1px solid rgba(0,229,160,0.25); border-radius: 16px;
+  padding: 16px 20px; margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  animation: fadeUp 0.45s ease;
+}
+.bal-label { font-size: 11px; letter-spacing: 1.2px; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
+.bal-ngn { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+.bal-usd { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.bal-icon { font-size: 36px; opacity: 0.3; }
+
+/* ─── CARD ─── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 20px; margin-bottom: 14px;
+  animation: fadeUp 0.5s ease;
+}
+.card-title {
+  font-size: 15px; font-weight: 700; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-sub { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+/* ─── PRICE BADGE ─── */
+.price-row {
+  display: flex; align-items: center; gap: 10px; margin: 14px 0;
+  flex-wrap: wrap;
+}
+.price-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3);
+  border-radius: 50px; padding: 7px 18px;
+  font-size: 20px; font-weight: 800; color: var(--accent);
+  font-family: 'DM Mono', monospace;
+}
+.price-badge small { font-size: 11px; color: var(--muted); font-weight: 400; font-family: 'Syne', sans-serif; }
+
+/* ─── TAB SELECTOR ─── */
+.tab-row {
+  display: flex; gap: 10px; margin: 14px 0 0;
+}
+.tab-btn {
+  flex: 1; padding: 13px 10px; text-align: center; border-radius: 14px;
+  background: var(--surface2); cursor: pointer; font-weight: 700; font-size: 13px;
+  border: 2px solid var(--border); color: var(--muted);
+  transition: all 0.2s; font-family: 'Syne', sans-serif;
+}
+.tab-btn.active {
+  border-color: var(--accent); background: rgba(0,229,160,0.08); color: var(--accent);
+}
+.tab-btn:not(.active):hover { border-color: rgba(0,229,160,0.3); }
+
+/* ─── SECTION ─── */
+.section { display: none; }
+.section.show { display: block; animation: fadeUp 0.3s ease; }
+
+/* ─── INPUT ─── */
+input, select {
+  width: 100%; padding: 13px 14px; margin-top: 10px;
+  border-radius: 12px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  font-family: 'Syne', sans-serif; font-size: 14px;
+  outline: none; transition: border-color 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); }
+select option { background: #0b1526; }
+.field-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 16px; display: block; }
+.field-hint  { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+/* ─── STEP NUMBER ─── */
+.step-row {
+  display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;
+}
+.step-num {
+  min-width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,229,160,0.15); border: 1px solid rgba(0,229,160,0.3);
+  color: var(--accent); font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
+}
+.step-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.step-text strong { color: var(--text); }
+
+/* ─── PASSCODE INPUT BOX ─── */
+.passcode-wrapper { display: none; }
+.passcode-wrapper.show { display: block; }
+.passcode-note {
+  font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6;
+}
+.passcode-note a { color: var(--accent2); }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 15px; border: none; border-radius: 14px;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; margin-top: 12px; transition: all 0.2s ease;
+  letter-spacing: 0.3px; text-decoration: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn-green  { background: linear-gradient(135deg, #065f46, var(--accent));  color: white; box-shadow: 0 4px 20px rgba(0,229,160,0.25); }
+.btn-blue   { background: linear-gradient(135deg, #1e40af, var(--accent2)); color: white; box-shadow: 0 4px 20px rgba(59,158,255,0.25); }
+.btn-amber  { background: linear-gradient(135deg, #78350f, var(--accent3)); color: white; box-shadow: 0 4px 20px rgba(245,158,11,0.2); }
+.btn-copy   { background: var(--surface2); border: 1px solid var(--border); color: var(--accent2); }
+.btn-dark   { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.btn-wa     { background: #25D366; color: white; }
+.btn-tg     { background: #0088cc; color: white; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none !important; }
+.btn:not(:disabled):hover { filter: brightness(1.1); }
+
+/* ─── STATUS ─── */
+.status {
+  margin-top: 12px; padding: 13px 16px; border-radius: 12px;
+  font-size: 13px; line-height: 1.6; display: none;
+}
+.status.show    { display: block; }
+.status.success { background: rgba(0,229,160,0.1);  border: 1px solid rgba(0,229,160,0.3);  color: var(--accent);  }
+.status.error   { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); color: var(--danger);  }
+.status.loading { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: var(--accent3); }
+
+/* ─── SUCCESS CARD ─── */
+.success-card {
+  display: none;
+  background: linear-gradient(135deg, rgba(0,229,160,0.08), rgba(0,229,160,0.03));
+  border: 1px solid rgba(0,229,160,0.3); border-radius: 18px;
+  padding: 24px; text-align: center; margin-bottom: 14px;
+}
+.success-card.show { display: block; animation: fadeUp 0.4s ease; }
+.success-card .s-icon { font-size: 50px; margin-bottom: 14px; }
+.success-card h2 { font-size: 18px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+.success-card p  { font-size: 13px; color: var(--muted); line-height: 1.8; }
+.promo-result-box {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; margin: 14px 0; text-align: left;
+}
+.promo-result-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.promo-result-value { font-size: 14px; font-family: 'DM Mono', monospace; color: var(--accent2); word-break: break-all; }
+
+/* ─── TASK TYPES ─── */
+.task-row { display: flex; gap: 10px; margin-top: 12px; }
+.task-opt {
+  flex: 1; padding: 12px; text-align: center; border-radius: 12px;
+  background: var(--surface2); cursor: pointer; font-weight: 700; font-size: 13px;
+  border: 2px solid var(--border); color: var(--muted);
+  transition: all 0.2s; font-family: 'Syne', sans-serif;
+}
+.task-opt.active { border-color: var(--accent2); background: rgba(59,158,255,0.08); color: var(--accent2); }
+
+.hidden { display: none !important; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 </style>
 </head>
-
 <body>
+
+<!-- HEADER -->
+<div class="top-header">
+  <button class="back-btn" onclick="location.href='dashboard.html'">← Back</button>
+  <div class="page-title">🔓 Unlock Promo</div>
+</div>
+
 <div class="container">
 
-<div class="card" id="userInfo">Loading user info...</div>
-
-<div class="card">
-<b>🔓 Unlock Promo Earnings</b><br><br>
-Choose how you want to unlock 👇
-</div>
-<div class="card">
-  <p> kindly choose one option above the two, whether you complete task or you purchase for promo access.</p>
-<button class="primary2" onclick="showTask()">✅ Complete Simple Task</button>
-<p style="text-align:center"><b>OR</b></p>
-<button class="secondary" onclick="showPurchase()">💳 Purchase Access</button>
-<button onclick="location.href='dashboard.html'">🔙 Back to dashboard</button>
-</div>
-
-<!-- TASK -->
-<div class="card hidden" id="taskBox">
-<b>📌 Task</b><br><br>
-1️⃣ Choose the type of task you prefer.<br>
-2️⃣ Join WhatsApp or Telegram group<br>
-3️⃣ Invite or add <b>10 people</b><br>
-4️⃣ Upload <b>screenshots or any proof</b><br><br>
-
-<div class="taskSelect">
-  <div id="optTelegram" class="taskOption" onclick="chooseTask('telegram')">
-    Telegram Task
+  <!-- PROFILE -->
+  <div class="profile-card">
+    <div class="avatar">👤</div>
+    <div class="profile-info">
+      <div class="profile-name" id="uName">Loading...</div>
+      <div class="profile-meta" id="uMeta">—</div>
+    </div>
   </div>
-    <div id="optWhatsapp" class="taskOption" onclick="chooseTask('whatsapp')">
-    WhatsApp Task
+
+  <!-- BALANCE -->
+  <div class="balance-strip">
+    <div>
+      <div class="bal-label">Your Balance</div>
+      <div class="bal-ngn" id="balNgn">₦—</div>
+      <div class="bal-usd" id="balUsd">≈ $—</div>
+    </div>
+    <div class="bal-icon">💰</div>
   </div>
-</div>
 
-<hr style="opacity:.2">
+  <!-- SUCCESS STATE (hidden until purchase complete) -->
+  <div class="success-card" id="successCard">
+    <div class="s-icon">🎉</div>
+    <h2>Promo Unlocked!</h2>
+    <p>Your promo code is now live. Share your link and earn commission!</p>
+    <div class="promo-result-box">
+      <div class="promo-result-label">Your Promo Code</div>
+      <div class="promo-result-value" id="resultCode">—</div>
+    </div>
+    <div class="promo-result-box">
+      <div class="promo-result-label">Your Promo Link</div>
+      <div class="promo-result-value" id="resultLink">—</div>
+    </div>
+    <button class="btn btn-copy" onclick="copyText(document.getElementById('resultLink').textContent, 'Promo link')">
+      🔗 Copy Promo Link
+    </button>
+    <button class="btn btn-dark" style="margin-top:8px;" onclick="location.href='dashboard.html'">
+      🏠 Back to Dashboard
+    </button>
+  </div>
 
-<div id="whatsappBox" class="hidden">
-  <a href="https://chat.whatsapp.com/JdEYEAnWBeDJpKrIeEDNG3" target="_blank">
-    <button class="whatsapp">📲 Join WhatsApp Group</button>
-  </a>
-  <button class="copy" onclick="copyText('https://chat.whatsapp.com/JdEYEAnWBeDJpKrIeEDNG3')">
-    📋 Copy WhatsApp Group Link
-  </button>
-  <input type="tel" id="taskWhatsapp" placeholder="Your WhatsApp number">
-</div>
+  <!-- INTRO CARD -->
+  <div class="card" id="introCard">
+    <div class="card-title"><span>🎯</span> Get Your Promo Access</div>
+    <div class="card-sub">
+      Unlock your personal promo code and earn commission every time someone buys using your link.
+    </div>
 
-<div id="telegramBox" class="hidden">
-  <a href="https://t.me/mayohtech" target="_blank">
-    <button class="telegram">📲 Join Telegram Group</button>
-  </a>
-  <button class="copy" onclick="copyText('https://t.me/mayohtech')">
-    📋 Copy Telegram Group Link
-  </button>
-  <input id="taskTelegram" placeholder="Your Telegram username or ID">
-</div>
+    <div class="price-row">
+      <div class="price-badge">₦2,000 <small>one-time fee</small></div>
+    </div>
 
-<input type="tel" id="taskCall" placeholder="Calling number">
-<input type="file" accept="image/*" id="taskShot" multiple>
-<button class="primary" onclick="submitTask()">Submit Task</button>
-<div class="status" id="taskStatus"></div>
-</div>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabPay"  onclick="switchTab('pay')">💳 Pay from Balance</button>
+      <button class="tab-btn"        id="tabTask" onclick="switchTab('task')">✅ Do a Task</button>
+    </div>
+  </div>
 
-<!-- PURCHASE -->
-<div class="card hidden" id="purchaseBox">
-<b>💳 Select Payment Method</b>
+  <!-- ══════════════════════════════════════════
+       TAB A: PAY FROM BALANCE (passcode flow)
+  ══════════════════════════════════════════ -->
+  <div class="section show" id="secPay">
+    <div class="card">
+      <div class="card-title"><span>💳</span> Pay ₦2,000 from Balance</div>
 
-<select id="payMethod" onchange="updatePaymentAddress()"
-style="width:100%;padding:12px;border-radius:10px;background:#020617;color:white;margin-top:10px;">
-<option value="">Select method</option>
-<option value="bank">Bank Transfer</option>
-<option value="bnb">BNB Smart Chain (BEP20)</option>
-</select>
+      <div style="margin-bottom:16px;">
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            Make sure your balance is <strong>₦2,000 or more</strong>.
+            If not, <a href="https://intelgroup.onrender.com/deposit.html" target="_blank" style="color:var(--accent2);">deposit here</a>.
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            Click <strong>"Generate Passcode"</strong> — a 6-digit code is sent to your Telegram.
+            This proves it is really you authorising the deduction.
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            Enter the code and click <strong>"Unlock Promo"</strong>.
+            ₦2,000 is deducted and your promo code goes live instantly!
+          </div>
+        </div>
+      </div>
 
-<div id="paymentAddress" class="addressBox hidden"></div>
+      <!-- GENERATE PASSCODE -->
+      <button class="btn btn-dark" id="genPasscodeBtn" onclick="generatePasscode()">
+        🔑 Generate Passcode
+      </button>
 
-<input type="tel" id="payWhatsapp" placeholder="Your WhatsApp number">
-<input type="tel" id="payCall" placeholder="Calling number">
-<input type="file" accept="image/*" id="payShot">
-<button class="secondary" onclick="submitPayment()">Submit Payment</button>
-<div class="status" id="payStatus"></div>
-</div>
+      <!-- PASSCODE INPUT -->
+      <div class="passcode-wrapper" id="passcodeWrapper">
+        <span class="field-label">Enter Passcode</span>
+        <input type="number" id="passcodeInput" placeholder="6-digit code from Telegram">
+        <div class="passcode-note">
+          Check <a href="https://t.me/intelpremiumbot" target="_blank">@intelpremiumbot</a> on Telegram for your code.
+          It expires in 5 minutes.
+        </div>
+        <button class="btn btn-green" id="buyPromoBtn" onclick="buyPromo()">
+          🚀 Unlock Promo — ₦2,000
+        </button>
+      </div>
 
-</div>
+      <div class="status" id="payStatus"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB B: TASK / SCREENSHOT (manual review)
+  ══════════════════════════════════════════ -->
+  <div class="section" id="secTask">
+    <div class="card">
+      <div class="card-title"><span>📌</span> Complete a Task</div>
+      <div class="card-sub" style="margin-bottom:14px;">
+        Choose Telegram or WhatsApp, join the group, invite 10 people, then upload proof.
+        Admin will manually review and unlock your promo.
+      </div>
+
+      <div class="task-row">
+        <button class="task-opt" id="tOptTg" onclick="chooseTask('telegram')">📱 Telegram</button>
+        <button class="task-opt" id="tOptWa" onclick="chooseTask('whatsapp')">💬 WhatsApp</button>
+      </div>
+
+      <!-- Telegram task -->
+      <div id="tgBox" class="hidden">
+        <a href="https://t.me/mayohtech" target="_blank">
+          <button class="btn btn-tg" style="margin-top:12px;">📲 Join Telegram Group</button>
+        </a>
+        <button class="btn btn-copy" onclick="copyText('https://t.me/mayohtech','Telegram group link')">
+          📋 Copy Link
+        </button>
+        <span class="field-label">Your Telegram Username or ID</span>
+        <input id="taskTg" placeholder="@username or 1234567890">
+      </div>
+
+      <!-- WhatsApp task -->
+      <div id="waBox" class="hidden">
+        <a href="https://chat.whatsapp.com/JdEYEAnWBeDJpKrIeEDNG3" target="_blank">
+          <button class="btn btn-wa" style="margin-top:12px;">📲 Join WhatsApp Group</button>
+        </a>
+        <button class="btn btn-copy" onclick="copyText('https://chat.whatsapp.com/JdEYEAnWBeDJpKrIeEDNG3','WhatsApp link')">
+          📋 Copy Link
+        </button>
+        <span class="field-label">Your WhatsApp Number</span>
+        <input type="tel" id="taskWa" placeholder="+234...">
+      </div>
+
+      <span class="field-label">Your Calling Number</span>
+      <input type="tel" id="taskCall" placeholder="+234...">
+
+      <span class="field-label">Proof Screenshots</span>
+      <input type="file" id="taskShot" accept="image/*" multiple>
+      <div class="field-hint">Upload screenshots showing you added 10 people.</div>
+
+      <button class="btn btn-amber" onclick="submitTask()">📤 Submit Task for Review</button>
+      <div class="status" id="taskStatus"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
 
 <script>
-const tg = Telegram.WebApp; tg.ready();
-const BACKEND = "https://promo-oz59.onrender.com";
+const tg      = window.Telegram.WebApp; tg.ready();
+const SERVER  = "";   /* same origin — server.js serves these files */
 
-const user = tg.initDataUnsafe?.user || {};
-const telegramId = user.id;
-const name = user.first_name || "Guest";
-const username = user.username ? "@"+user.username : "No username";
+const user       = tg.initDataUnsafe?.user || {};
+const telegramId = user.id ? String(user.id) : null;
+const name       = user.first_name || "Guest";
+const username   = user.username ? "@" + user.username : "No username";
 
-userInfo.innerHTML = `<b>Name:</b> ${name}<br><b>Username:</b> ${username}<br><b>ID:</b> ${telegramId||"N/A"}`;
+/* ─── UI REFS ─── */
+const uName          = document.getElementById("uName");
+const uMeta          = document.getElementById("uMeta");
+const balNgn         = document.getElementById("balNgn");
+const balUsd         = document.getElementById("balUsd");
+const genPasscodeBtn = document.getElementById("genPasscodeBtn");
+const passcodeWrapper= document.getElementById("passcodeWrapper");
+const buyPromoBtn    = document.getElementById("buyPromoBtn");
+const payStatus      = document.getElementById("payStatus");
+const taskStatus     = document.getElementById("taskStatus");
+const successCard    = document.getElementById("successCard");
+const introCard      = document.getElementById("introCard");
 
+uName.textContent = name;
+uMeta.textContent = username + " · ID: " + (telegramId || "N/A");
+
+let ngnPerUsd  = 1600;
 let selectedTask = "";
 
-function showTask(){
-  taskBox.classList.remove("hidden");
-  purchaseBox.classList.add("hidden");
+/* ─── LOAD BALANCE ─── */
+async function loadBalance() {
+  if (!telegramId) return;
+  try {
+    const r = await fetch(SERVER + "/get-balance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegramId })
+    });
+    const d = await r.json();
+    if (d.usdRate && d.usdRate > 100) ngnPerUsd = d.usdRate;
+    const ngn = d.ngn || 0;
+    balNgn.textContent = "₦" + ngn.toLocaleString();
+    balUsd.textContent = "≈ $" + (ngn / ngnPerUsd).toFixed(2) + " USD";
+  } catch {
+    balNgn.textContent = "₦—";
+    balUsd.textContent = "Error loading";
+  }
+}
+loadBalance();
+
+/* ─── TAB SWITCH ─── */
+function switchTab(tab) {
+  document.getElementById("tabPay").classList.toggle("active",  tab === "pay");
+  document.getElementById("tabTask").classList.toggle("active", tab === "task");
+  document.getElementById("secPay").classList.toggle("show",    tab === "pay");
+  document.getElementById("secTask").classList.toggle("show",   tab === "task");
 }
 
-function showPurchase(){
-  purchaseBox.classList.remove("hidden");
-  taskBox.classList.add("hidden");
-}
-
-function chooseTask(type){
+/* ─── TASK CHOICE ─── */
+function chooseTask(type) {
   selectedTask = type;
-
-  optWhatsapp.classList.toggle("active", type==="whatsapp");
-  optTelegram.classList.toggle("active", type==="telegram");
-
-  whatsappBox.classList.toggle("hidden", type!=="whatsapp");
-  telegramBox.classList.toggle("hidden", type!=="telegram");
+  document.getElementById("tOptTg").classList.toggle("active", type === "telegram");
+  document.getElementById("tOptWa").classList.toggle("active", type === "whatsapp");
+  document.getElementById("tgBox").classList.toggle("hidden",  type !== "telegram");
+  document.getElementById("waBox").classList.toggle("hidden",  type !== "whatsapp");
 }
 
-function copyText(text){
-  navigator.clipboard.writeText(text);
-  tg.showAlert("Copied ✅");
+/* ─── STATUS HELPER ─── */
+function setStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className = "status show " + type;
 }
+function clearStatus(el) { el.className = "status"; }
 
-function updatePaymentAddress(){
-  if(payMethod.value==="bank"){
-    paymentAddress.innerHTML=`<b>🏦 Bank Transfer</b><br><br>
-    <b>💰 Amount:</b> <span class="amount">₦2,000</span><br><br>
-    Account Name: Olatunji Abdulmalik Ayomide<br>
-    Account Number: 9114301708<br>
-    Bank: Opay<br><br>
-    <button class="copy" onclick="copyText('9114301708')">📋 Copy Account Number</button>`;
-    paymentAddress.classList.remove("hidden");
-  } else if(payMethod.value==="bnb"){
-    paymentAddress.innerHTML=`<b>💎 BNB (BEP20)</b><br><br>
-    <b>💰 Amount:</b> <span class="amount">$4.5</span><br><br>
-    Wallet Address: 0xbBcc409872bC2441400735624638F3D67DAa7C4C<br><br>
-    <button class="copy" onclick="copyText('0xbBcc409872bC2441400735624638F3D67DAa7C4C')">📋 Copy BNB Address</button>`;
-    paymentAddress.classList.remove("hidden");
-  } else {
-    paymentAddress.classList.add("hidden");
+/* ─── GENERATE PASSCODE ─── */
+async function generatePasscode() {
+  if (!telegramId) return setStatus(payStatus, "❌ Open this page from Telegram.", "error");
+  setStatus(payStatus, "⏳ Sending passcode to your Telegram...", "loading");
+  genPasscodeBtn.disabled = true;
+
+  try {
+    const r = await fetch(SERVER + "/generate-passcode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegramId, purpose: "promo" })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Failed");
+
+    setStatus(payStatus, "✅ Passcode sent to your Telegram! Enter it below.", "success");
+    passcodeWrapper.classList.add("show");
+    genPasscodeBtn.textContent = "🔁 Resend Passcode";
+    genPasscodeBtn.disabled    = false;
+  } catch (err) {
+    setStatus(payStatus, "❌ " + err.message, "error");
+    genPasscodeBtn.disabled = false;
   }
 }
 
-// ====== UPDATED TASK SUBMISSION ======
-async function submitTask(){
-  if(!selectedTask) return taskStatus.innerHTML="❌ Select a task option";
-  if(!taskShot.files.length) return taskStatus.innerHTML="❌ Upload proof";
+/* ─── BUY PROMO (passcode-verified balance deduction) ─── */
+async function buyPromo() {
+  const passcode = document.getElementById("passcodeInput").value.trim();
+  if (!passcode) return setStatus(payStatus, "❌ Enter the passcode from Telegram.", "error");
+  if (!telegramId) return setStatus(payStatus, "❌ Open this page from Telegram.", "error");
 
-  taskStatus.innerHTML="⏳ Sending...";
+  setStatus(payStatus, "⏳ Verifying passcode and deducting ₦2,000...", "loading");
+  buyPromoBtn.disabled = true;
 
   try {
-    for(const f of taskShot.files){
-      const reader = new FileReader();
-      const fileData = await new Promise((resolve, reject)=>{
-        reader.onload = ()=>resolve(reader.result);
-        reader.onerror = ()=>reject("Failed to read file");
-        reader.readAsDataURL(f);
-      });
+    const r = await fetch(SERVER + "/buy-promo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegramId, name, username, passcode })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Failed");
 
-      const res = await fetch(BACKEND+"/unlock-promo",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
-          telegramId,name,username,
-          method:"Task",
-          whatsapp:selectedTask==="whatsapp"?taskWhatsapp.value:"N/A",
-          telegramTask:selectedTask==="telegram"?taskTelegram.value:"N/A",
-          call:taskCall.value||"N/A",
-          image:fileData,
-          type:"task"
+    /* Show success state */
+    introCard.style.display     = "none";
+    document.getElementById("secPay").style.display  = "none";
+    document.getElementById("secTask").style.display = "none";
+
+    document.getElementById("resultCode").textContent = d.promoCode;
+    document.getElementById("resultLink").textContent = d.promoLink;
+    successCard.classList.add("show");
+
+    /* Update balance display */
+    balNgn.textContent = "₦" + d.newBalance.toLocaleString();
+    balUsd.textContent = "≈ $" + (d.newBalance / ngnPerUsd).toFixed(2) + " USD";
+
+    clearStatus(payStatus);
+  } catch (err) {
+    setStatus(payStatus, "❌ " + err.message, "error");
+    buyPromoBtn.disabled = false;
+  }
+}
+
+/* ─── SUBMIT TASK (manual / screenshot review) ─── */
+async function submitTask() {
+  if (!selectedTask) return setStatus(taskStatus, "❌ Choose Telegram or WhatsApp task.", "error");
+  const files = document.getElementById("taskShot").files;
+  if (!files.length) return setStatus(taskStatus, "❌ Upload at least one screenshot.", "error");
+
+  setStatus(taskStatus, "⏳ Sending proof to admin...", "loading");
+
+  try {
+    for (const f of files) {
+      const fileData = await toBase64(f);
+      const r = await fetch(SERVER + "/unlock-promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telegramId, name, username,
+          method: "Task",
+          whatsapp: selectedTask === "whatsapp" ? document.getElementById("taskWa").value : "N/A",
+          telegramTask: selectedTask === "telegram" ? document.getElementById("taskTg").value : "N/A",
+          call: document.getElementById("taskCall").value || "N/A",
+          image: fileData,
+          type: "task"
         })
       });
-
-      const result = await res.json();
-      if(!result.success) throw new Error(result.error || "Server rejected submission");
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Server error");
     }
-
-    taskStatus.innerHTML="✅ Task successfully submitted!";
-  } catch(err){
-    console.error(err);
-    taskStatus.innerHTML=`❌ Submission failed: ${err.message}`;
+    setStatus(taskStatus, "✅ Proof submitted! Admin will review and unlock your promo shortly. You'll get a Telegram message when it's done.", "success");
+  } catch (err) {
+    setStatus(taskStatus, "❌ " + err.message, "error");
   }
 }
 
-// ====== UPDATED PAYMENT SUBMISSION ======
-async function submitPayment(){
-  if(!payShot.files[0]) return payStatus.innerHTML="❌ Upload receipt";
+/* ─── COPY TEXT ─── */
+function copyText(text, label) {
+  navigator.clipboard.writeText(text);
+  const t = document.createElement("div");
+  t.textContent = "✅ " + (label || "Copied") + "!";
+  t.style.cssText = `
+    position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+    background:#00e5a0;color:#050a14;padding:10px 24px;border-radius:50px;
+    font-family:'Syne',sans-serif;font-weight:700;font-size:13px;z-index:9999;
+  `;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
 
-  payStatus.innerHTML="⏳ Sending...";
-  const reader = new FileReader();
-
-  try {
-    const fileData = await new Promise((resolve,reject)=>{
-      reader.onload = ()=>resolve(reader.result);
-      reader.onerror = ()=>reject("Failed to read file");
-      reader.readAsDataURL(payShot.files[0]);
-    });
-
-    const res = await fetch(BACKEND+"/unlock-promo",{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        telegramId,name,username,
-        method:payMethod.value,
-        whatsapp:payWhatsapp.value||"N/A",
-        call:payCall.value||"N/A",
-        image:fileData,
-        type:"payment"
-      })
-    });
-
-    const result = await res.json();
-    if(!result.success) throw new Error(result.error || "Server rejected submission");
-
-    payStatus.innerHTML="✅ Payment successfully sent!";
-  } catch(err){
-    console.error(err);
-    payStatus.innerHTML=`❌ Submission failed: ${err.message}`;
-  }
+/* ─── FILE TO BASE64 ─── */
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result);
+    r.onerror = () => rej(new Error("Failed to read file"));
+    r.readAsDataURL(file);
+  });
 }
 </script>
 </body>
