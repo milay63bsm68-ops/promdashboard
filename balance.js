@@ -12,6 +12,6 @@ window.USER_BALANCES = {
     "ngn": 0
   },
   "7979664801": {
-    "ngn": 50152
+    "ngn": 48152
   }
 }
