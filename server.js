@@ -368,6 +368,29 @@ app.post("/withdraw", async (req, res) => {
 });
 
 /* ════════════════════════════════════════════════════════════════
+   PUBLIC:  CHECK PROMO STATUS
+   Returns { hasPromo, promoCode, promoLink } for the given Telegram ID.
+   Called by unlockpromo.html on page load so it can warn users who
+   already have promo access and don't need to buy again.
+════════════════════════════════════════════════════════════════ */
+app.post("/check-promo-status", async (req, res) => {
+  const telegramId = req.body.telegramId ? String(req.body.telegramId).trim() : null;
+  if (!telegramId) return res.status(400).json({ error: "Missing Telegram ID" });
+
+  try {
+    const { list } = await readPromoList();
+    const hasPromo = list.includes(telegramId);
+    const promoCode = telegramId;
+    const promoLink = `https://intelligentverificationlink.ct.ws?ref=${telegramId}`;
+
+    res.json({ hasPromo, promoCode: hasPromo ? promoCode : null, promoLink: hasPromo ? promoLink : null });
+  } catch (err) {
+    console.error("check-promo-status:", err.message);
+    res.status(500).json({ error: "Could not check promo status: " + err.message });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════
    PUBLIC:  BUY PROMO ACCESS
    ──────────────────────────────────────────────────────────────
    Flow:
