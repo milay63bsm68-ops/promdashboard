@@ -238,6 +238,26 @@ app.get("/unlockpromo",      (req, res) => res.sendFile(path.join(__dirname, "un
 app.get("/admin",            (req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 
 /* ════════════════════════════════════════════════════════════════
+   PUBLIC:  SERVE promolist.js  (proxied from GitHub repo)
+   dashboard.html loads this as <script src="/promolist.js">
+════════════════════════════════════════════════════════════════ */
+app.get("/promolist.js", async (req, res) => {
+  try {
+    const { list } = await readPromoList();
+    const entries  = list.map(id => `  "${id}"`).join(",\n");
+    const js       = `const PROMO_LIST = [\n${entries}\n];\n`;
+    res.setHeader("Content-Type", "application/javascript");
+    res.setHeader("Cache-Control", "no-cache");
+    res.send(js);
+  } catch (err) {
+    console.error("promolist.js endpoint:", err.message);
+    /* Serve an empty list so the page still loads gracefully */
+    res.setHeader("Content-Type", "application/javascript");
+    res.send("const PROMO_LIST = [];\n");
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════
    PUBLIC:  GET BALANCE
 ════════════════════════════════════════════════════════════════ */
 app.post("/get-balance", async (req, res) => {
