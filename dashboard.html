@@ -35,134 +35,85 @@ body {
   overflow-x: hidden;
 }
 
-/* ─── BACKGROUND EFFECT ─── */
 body::before {
   content: '';
   position: fixed;
-  top: -200px;
-  right: -200px;
-  width: 500px;
-  height: 500px;
+  top: -200px; right: -200px;
+  width: 500px; height: 500px;
   background: radial-gradient(circle, rgba(0,229,160,0.06) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  pointer-events: none; z-index: 0;
 }
 body::after {
   content: '';
   position: fixed;
-  bottom: -200px;
-  left: -100px;
-  width: 400px;
-  height: 400px;
+  bottom: -200px; left: -100px;
+  width: 400px; height: 400px;
   background: radial-gradient(circle, rgba(59,158,255,0.06) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  pointer-events: none; z-index: 0;
 }
 
 /* ─── TOP HEADER ─── */
 .top-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  position: sticky; top: 0; z-index: 100;
   background: rgba(5,10,20,0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
 }
 .brand {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-size: 18px; font-weight: 800; letter-spacing: -0.5px;
   background: linear-gradient(90deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .header-badge {
   background: rgba(0,229,160,0.12);
   border: 1px solid rgba(0,229,160,0.3);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
+  color: var(--accent); font-size: 11px; font-weight: 600;
+  padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;
 }
 
 /* ─── CONTAINER ─── */
 .container {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 20px 16px;
-  position: relative;
-  z-index: 1;
+  max-width: 480px; margin: 0 auto;
+  padding: 20px 16px; position: relative; z-index: 1;
 }
 
 /* ─── PROFILE CARD ─── */
 .profile-card {
   background: linear-gradient(135deg, var(--surface) 0%, #0d1e38 100%);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  position: relative;
-  overflow: hidden;
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 20px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 14px;
+  position: relative; overflow: hidden;
 }
 .profile-card::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0;
+  content: ''; position: absolute; top: 0; right: 0;
   width: 120px; height: 120px;
   background: radial-gradient(circle, rgba(0,229,160,0.08) 0%, transparent 70%);
 }
 .avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  width: 52px; height: 52px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent2), var(--accent));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
   border: 2px solid rgba(0,229,160,0.3);
 }
 .profile-info { flex: 1; min-width: 0; }
 .profile-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 16px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.profile-meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
+.profile-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .profile-tag {
-  font-size: 11px;
-  font-family: 'DM Mono', monospace;
-  color: var(--muted);
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
-  padding: 2px 8px;
-  border-radius: 6px;
+  font-size: 11px; font-family: 'DM Mono', monospace;
+  color: var(--muted); background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border); padding: 2px 8px; border-radius: 6px;
 }
 .online-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
-  flex-shrink: 0;
-  animation: pulse-dot 2s ease-in-out infinite;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 8px var(--accent);
+  flex-shrink: 0; animation: pulse-dot 2s ease-in-out infinite;
 }
 @keyframes pulse-dot {
   0%,100% { opacity: 1; transform: scale(1); }
@@ -172,146 +123,129 @@ body::after {
 /* ─── BALANCE CARD ─── */
 .balance-card {
   background: linear-gradient(135deg, #061a10 0%, #0a2218 50%, #051420 100%);
-  border: 1px solid rgba(0,229,160,0.25);
-  border-radius: 20px;
-  padding: 22px 20px;
-  margin-bottom: 14px;
-  position: relative;
-  overflow: hidden;
+  border: 1px solid rgba(0,229,160,0.25); border-radius: 20px;
+  padding: 22px 20px; margin-bottom: 14px;
+  position: relative; overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.balance-card:hover {
+  border-color: rgba(0,229,160,0.5);
+  box-shadow: 0 0 20px rgba(0,229,160,0.08);
 }
 .balance-card::before {
-  content: '';
-  position: absolute;
-  top: -30px; right: -30px;
+  content: ''; position: absolute; top: -30px; right: -30px;
   width: 150px; height: 150px;
   background: radial-gradient(circle, rgba(0,229,160,0.12) 0%, transparent 70%);
 }
 .balance-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  color: var(--accent);
-  text-transform: uppercase;
-  margin-bottom: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 6px;
 }
 .balance-ngn {
-  font-size: 34px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -1px;
-  line-height: 1;
+  font-size: 34px; font-weight: 800; color: var(--text);
+  letter-spacing: -1px; line-height: 1;
 }
 .balance-usd {
-  font-size: 14px;
-  color: var(--muted);
-  font-family: 'DM Mono', monospace;
-  margin-top: 4px;
+  font-size: 14px; color: var(--muted);
+  font-family: 'DM Mono', monospace; margin-top: 4px;
 }
 .balance-icon {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 42px;
-  opacity: 0.25;
+  position: absolute; right: 20px; top: 50%;
+  transform: translateY(-50%); font-size: 42px; opacity: 0.25;
 }
+.balance-tap-hint {
+  font-size: 11px; color: var(--muted); margin-top: 8px;
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ─── BALANCE ACTION BUTTONS (shown on click) ─── */
+.balance-actions {
+  display: none;
+  gap: 10px;
+  margin-top: 14px;
+}
+.balance-actions.show { display: flex; }
+
+.bal-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 12px 10px; border: none; border-radius: 12px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.3px;
+  text-decoration: none;
+}
+.bal-btn:active { transform: scale(0.96); }
+.bal-btn-deposit {
+  background: linear-gradient(135deg, #065f46, var(--accent));
+  color: white; box-shadow: 0 4px 16px rgba(0,229,160,0.25);
+}
+.bal-btn-withdraw {
+  background: linear-gradient(135deg, #1e40af, var(--accent2));
+  color: white; box-shadow: 0 4px 16px rgba(59,158,255,0.25);
+}
+.bal-btn:hover { filter: brightness(1.1); }
 
 /* ─── SECTION TITLE ─── */
 .section-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 20px 0 10px 4px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted); margin: 20px 0 10px 4px;
 }
 
 /* ─── CARD ─── */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 18px;
-  margin-bottom: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 18px; margin-bottom: 14px;
 }
 .card-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 15px; font-weight: 700; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
 }
 .card-title span { font-size: 18px; }
 
 /* ─── BUTTONS ─── */
 .btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 15px;
-  border: none;
-  border-radius: 14px;
-  font-family: 'Syne', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: all 0.2s ease;
-  letter-spacing: 0.3px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 15px; border: none; border-radius: 14px;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; margin-top: 10px; transition: all 0.2s ease; letter-spacing: 0.3px;
+  text-decoration: none;
 }
 .btn:active { transform: scale(0.97); }
-
 .btn-withdraw {
   background: linear-gradient(135deg, #1e40af, var(--accent2));
-  color: white;
-  box-shadow: 0 4px 20px rgba(59,158,255,0.25);
+  color: white; box-shadow: 0 4px 20px rgba(59,158,255,0.25);
+}
+.btn-deposit {
+  background: linear-gradient(135deg, #065f46, var(--accent));
+  color: white; box-shadow: 0 4px 20px rgba(0,229,160,0.25);
 }
 .btn-unlock {
   background: linear-gradient(135deg, #065f46, var(--accent));
-  color: white;
-  box-shadow: 0 4px 20px rgba(0,229,160,0.25);
+  color: white; box-shadow: 0 4px 20px rgba(0,229,160,0.25);
 }
 .btn-copy {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--accent2);
+  background: var(--surface2); border: 1px solid var(--border); color: var(--accent2);
 }
 .btn-tools {
   background: linear-gradient(135deg, #78350f, var(--accent3));
-  color: white;
-  box-shadow: 0 4px 20px rgba(245,158,11,0.25);
+  color: white; box-shadow: 0 4px 20px rgba(245,158,11,0.25);
 }
 .btn:hover { filter: brightness(1.1); }
 
 /* ─── PROMO BOX ─── */
 .promo-box {
-  display: flex;
-  align-items: center;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin: 8px 0;
-  gap: 10px;
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px; margin: 8px 0; gap: 10px;
 }
 .promo-box .promo-label {
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 3px;
+  font-size: 10px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
 }
 .promo-box .promo-value {
-  font-size: 13px;
-  color: var(--accent2);
-  font-family: 'DM Mono', monospace;
-  user-select: all;
-  cursor: text;
-  flex: 1;
-  word-break: break-all;
+  font-size: 13px; color: var(--accent2);
+  font-family: 'DM Mono', monospace; user-select: all; cursor: text;
+  flex: 1; word-break: break-all;
 }
 .promo-icon { font-size: 20px; flex-shrink: 0; }
 
@@ -319,10 +253,7 @@ body::after {
 .locked-notice {
   background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.02));
   border: 1px dashed rgba(245,158,11,0.4);
-  border-radius: 14px;
-  padding: 20px;
-  text-align: center;
-  margin-bottom: 10px;
+  border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 10px;
 }
 .locked-notice .lock-icon { font-size: 40px; margin-bottom: 10px; }
 .locked-notice p { color: #94a3b8; font-size: 13px; line-height: 1.7; margin: 0 0 4px; }
@@ -330,22 +261,14 @@ body::after {
 
 /* ─── EARNINGS TABLE ─── */
 .earn-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  font-size: 13px;
+  width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;
 }
 .earn-table th, .earn-table td {
-  border: 1px solid var(--border);
-  padding: 10px 8px;
-  text-align: center;
+  border: 1px solid var(--border); padding: 10px 8px; text-align: center;
 }
 .earn-table th {
-  background: rgba(0,0,0,0.3);
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  color: var(--muted);
-  text-transform: uppercase;
+  background: rgba(0,0,0,0.3); font-size: 11px;
+  letter-spacing: 0.5px; color: var(--muted); text-transform: uppercase;
 }
 .earn-table td:last-child { color: var(--accent); font-weight: 700; font-family: 'DM Mono', monospace; }
 .earn-table tr:hover td { background: rgba(255,255,255,0.02); }
@@ -355,50 +278,25 @@ a { color: var(--accent2); text-decoration: none; }
 
 /* ─── BOTTOM NAV ─── */
 .bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 200;
-  background: rgba(11, 21, 38, 0.96);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border);
-  padding: 10px 0 16px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: rgba(11, 21, 38, 0.96); backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border); padding: 10px 0 16px;
+  display: flex; justify-content: space-around; align-items: center;
 }
 .nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  color: var(--muted);
-  border: none;
-  background: none;
-  font-family: 'Syne', sans-serif;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; padding: 4px 12px; border-radius: 12px;
+  transition: all 0.2s ease; text-decoration: none; color: var(--muted);
+  border: none; background: none; font-family: 'Syne', sans-serif;
 }
 .nav-item.active { color: var(--accent); }
 .nav-item:active { transform: scale(0.92); }
-.nav-icon {
-  font-size: 22px;
-  transition: transform 0.2s ease;
-}
-.nav-item.active .nav-icon {
-  filter: drop-shadow(0 0 6px var(--accent));
-}
+.nav-icon { font-size: 22px; transition: transform 0.2s ease; }
+.nav-item.active .nav-icon { filter: drop-shadow(0 0 6px var(--accent)); }
 .nav-item:active .nav-icon { transform: scale(0.85); }
-.nav-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
+.nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
 
-/* ─── FADE IN ANIMATION ─── */
+/* ─── ANIMATIONS ─── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -407,13 +305,21 @@ a { color: var(--accent2); text-decoration: none; }
 .balance-card { animation: fadeUp 0.5s ease forwards; }
 #promo { animation: fadeUp 0.6s ease forwards; }
 #actionCard { animation: fadeUp 0.7s ease forwards; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.balance-actions.show {
+  animation: slideDown 0.25s ease forwards;
+}
 </style>
 </head>
 <body>
 
 <!-- TOP HEADER -->
 <div class="top-header">
-  <div class="brand">⚡ INTELLIGENT  PROMO EARNING DASHBOARD</div>
+  <div class="brand">⚡ INTELLIGENT PROMO EARNING DASHBOARD</div>
   <div class="header-badge">LIVE</div>
 </div>
 
@@ -433,12 +339,22 @@ a { color: var(--accent2); text-decoration: none; }
     <div class="online-dot"></div>
   </div>
 
-  <!-- Balance -->
-  <div class="balance-card" id="balance">
+  <!-- Balance (clickable) -->
+  <div class="balance-card" id="balanceCard" onclick="toggleBalanceActions()">
     <div class="balance-label">Total Balance</div>
-    <div class="balance-ngn">₦0.00</div>
-    <div class="balance-usd">≈ $0.00</div>
+    <div class="balance-ngn" id="balNgn">₦0.00</div>
+    <div class="balance-usd" id="balUsd">≈ $0.00</div>
     <div class="balance-icon">💰</div>
+    <div class="balance-tap-hint">👆 Tap to deposit or withdraw</div>
+    <!-- Deposit & Withdraw buttons (hidden until tap) -->
+    <div class="balance-actions" id="balanceActions">
+      <a class="bal-btn bal-btn-deposit" href="https://intelgroup.onrender.com/deposit.html" target="_blank">
+        💳 Deposit
+      </a>
+      <button class="bal-btn bal-btn-withdraw" onclick="event.stopPropagation(); location.href='withdraw.html'">
+        💸 Withdraw
+      </button>
+    </div>
   </div>
 
   <!-- Promo Section -->
@@ -453,8 +369,6 @@ a { color: var(--accent2); text-decoration: none; }
 
 <!-- BOTTOM NAVIGATION -->
 <nav class="bottom-nav">
-  <!-- ── MAIN NAV ITEMS ── Add more items here in the future by copying a nav-item block ── -->
-
   <button class="nav-item active" onclick="scrollToTop()">
     <span class="nav-icon">🏠</span>
     <span class="nav-label">Home</span>
@@ -465,7 +379,12 @@ a { color: var(--accent2); text-decoration: none; }
     <span class="nav-label">Groups</span>
   </a>
 
-  <button class="nav-item" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
+  <a class="nav-item" href="https://intelgroup.onrender.com/deposit.html" target="_blank">
+    <span class="nav-icon">💳</span>
+    <span class="nav-label">Deposit</span>
+  </a>
+
+  <button class="nav-item" onclick="location.href='withdraw.html'">
     <span class="nav-icon">💸</span>
     <span class="nav-label">Withdraw</span>
   </button>
@@ -479,44 +398,42 @@ a { color: var(--accent2); text-decoration: none; }
     <span class="nav-icon">🔓</span>
     <span class="nav-label">Unlock</span>
   </button>
-
-  <!-- ── ADD MORE NAV ITEMS BELOW THIS LINE ──
-  <a class="nav-item" href="YOUR_LINK_HERE" target="_blank">
-    <span class="nav-icon">EMOJI</span>
-    <span class="nav-label">LABEL</span>
-  </a>
-  ── END OF ADDITIONAL NAV ITEMS ── -->
 </nav>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready();
 
-const user = tg.initDataUnsafe?.user;
+const user       = tg.initDataUnsafe?.user;
 const telegramId = user ? String(user.id) : null;
-const name = user?.first_name || "Guest";
-const username = user?.username ? "@" + user.username : "No username";
+const name       = user?.first_name || "Guest";
+const username   = user?.username ? "@" + user.username : "No username";
 
-// Populate profile card
-document.getElementById("profileName").textContent = name;
+document.getElementById("profileName").textContent     = name;
 document.getElementById("profileUsername").textContent = username;
-document.getElementById("profileId").textContent = "ID: " + (telegramId || "N/A");
+document.getElementById("profileId").textContent       = "ID: " + (telegramId || "N/A");
 
-function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-// ── NAV ACTIVE STATE HELPER ──
-// Call setActiveNav(index) to highlight a nav item (0-based, left to right)
 function setActiveNav(index) {
   document.querySelectorAll('.nav-item').forEach((el, i) => {
     el.classList.toggle('active', i === index);
   });
 }
 
-// ---------------------------
-// Fetch user balance
-// ---------------------------
+/* ─── BALANCE TAP TOGGLE ─── */
+let balanceActionsOpen = false;
+function toggleBalanceActions() {
+  balanceActionsOpen = !balanceActionsOpen;
+  const actions = document.getElementById("balanceActions");
+  if (balanceActionsOpen) {
+    actions.classList.add("show");
+  } else {
+    actions.classList.remove("show");
+  }
+}
+
+/* ─── FETCH BALANCE ─── */
 async function getUserBalance() {
   if (!telegramId) return 0;
   try {
@@ -527,39 +444,29 @@ async function getUserBalance() {
     });
     const data = await res.json();
     return data?.ngn || 0;
-  } catch {
-    return 0;
-  }
+  } catch { return 0; }
 }
 
 async function fetchUsdRate() {
   try {
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
+    const res  = await fetch("https://api.exchangerate-api.com/v4/latest/NGN");
     const data = await res.json();
     return data.rates.USD || 0.0026;
-  } catch {
-    return 0.0026;
-  }
+  } catch { return 0.0026; }
 }
 
 async function loadBalance() {
-  const ngn = await getUserBalance();
+  const ngn     = await getUserBalance();
   const usdRate = await fetchUsdRate();
 
-  document.getElementById("balance").innerHTML = `
-    <div class="balance-label">Total Balance</div>
-    <div class="balance-ngn">₦${ngn.toLocaleString()}</div>
-    <div class="balance-usd">≈ $${(ngn * usdRate).toFixed(2)} USD</div>
-    <div class="balance-icon">💰</div>
-  `;
+  document.getElementById("balNgn").textContent = "₦" + ngn.toLocaleString();
+  document.getElementById("balUsd").textContent = "≈ $" + (ngn * usdRate).toFixed(2) + " USD";
 
   document.getElementById("actionCard").innerHTML = `
     <div class="card-title"><span>🛠️</span> All Earning Tools</div>
-
     <button class="btn btn-tools" onclick="window.open('https://t.me/intelligentverificationlinkbot','_blank')">
       🛠️ All Hacking Tools & Links
     </button>
-
     <div style="margin-top:20px;" id="earnings"></div>
   `;
 
@@ -568,52 +475,37 @@ async function loadBalance() {
     <p style="color:var(--muted);font-size:13px;margin-bottom:12px;line-height:1.6;">
       Share your promo code and earn commission every time someone upgrades their plan.
     </p>
-
     <table class="earn-table">
       <tr>
-        <th>Plan</th>
-        <th>User Pays</th>
-        <th>You Earn</th>
+        <th>Plan</th><th>User Pays</th><th>You Earn</th>
       </tr>
       <tr>
-        <td>7 Days</td>
-        <td>₦3,500</td>
+        <td>7 Days</td><td>₦3,500</td>
         <td>₦1,000 ≈ $${(1000 * usdRate).toFixed(2)}</td>
       </tr>
       <tr>
-        <td>14 Days</td>
-        <td>₦7,000</td>
+        <td>14 Days</td><td>₦7,000</td>
         <td>₦2,000 ≈ $${(2000 * usdRate).toFixed(2)}</td>
       </tr>
       <tr>
-        <td>Forever</td>
-        <td>₦20,000</td>
+        <td>Forever</td><td>₦20,000</td>
         <td>₦5,000 ≈ $${(5000 * usdRate).toFixed(2)}</td>
       </tr>
     </table>
-
     <br>
     <small>📌 Share your promo link anywhere. Every successful purchase adds earnings to your balance instantly.</small>
   `;
 }
 loadBalance();
 
-// ---------------------------
-// Promo code logic
-// ---------------------------
+/* ─── PROMO CODE LOGIC ─── */
 function checkPromo() {
   const promoContainer = document.getElementById("promo");
   if (!Array.isArray(PROMO_LIST) || !telegramId) return;
 
   const hasPromo = PROMO_LIST.includes(telegramId);
 
-  let content = `
-    <div class="card-title"><span>🎯</span> Promo Access</div>
-
-    <button class="btn btn-withdraw" onclick="window.open('https://t.me/intelpremiumbot/withdraw','_blank')">
-      💸 Withdraw Earnings
-    </button><br>
-  `;
+  let content = `<div class="card-title"><span>🎯</span> Promo Access</div>`;
 
   if (hasPromo) {
     const promoCode = telegramId;
@@ -661,7 +553,6 @@ function checkPromo() {
           Click below to get started and earn real money with your personal promo code!
         </p>
       </div>
-
       <button class="btn btn-unlock" onclick="location.href='unlockpromo.html'">
         🔓 Unlock Promo Earnings
       </button>
@@ -673,7 +564,6 @@ function checkPromo() {
 
 function copyText(text, label) {
   navigator.clipboard.writeText(text);
-  // Small toast instead of alert
   const toast = document.createElement('div');
   toast.textContent = '✅ ' + (label || 'Text') + ' copied!';
   toast.style.cssText = `
@@ -694,10 +584,6 @@ function waitForPromoList() {
   }
 }
 waitForPromoList();
-
-// ── ADD MORE JAVASCRIPT FUNCTIONALITY BELOW ──
-// Example: Add a new page section, handle tab navigation, etc.
-// ── END OF ADDITIONAL JS ──
 </script>
 
 </body>
