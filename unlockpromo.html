@@ -130,25 +130,6 @@ body::after {
 }
 .price-badge small { font-size: 11px; color: var(--muted); font-weight: 400; font-family: 'Syne', sans-serif; }
 
-/* ─── TAB SELECTOR ─── */
-.tab-row {
-  display: flex; gap: 10px; margin: 14px 0 0;
-}
-.tab-btn {
-  flex: 1; padding: 13px 10px; text-align: center; border-radius: 14px;
-  background: var(--surface2); cursor: pointer; font-weight: 700; font-size: 13px;
-  border: 2px solid var(--border); color: var(--muted);
-  transition: all 0.2s; font-family: 'Syne', sans-serif;
-}
-.tab-btn.active {
-  border-color: var(--accent); background: rgba(0,229,160,0.08); color: var(--accent);
-}
-.tab-btn:not(.active):hover { border-color: rgba(0,229,160,0.3); }
-
-/* ─── SECTION ─── */
-.section { display: none; }
-.section.show { display: block; animation: fadeUp 0.3s ease; }
-
 /* ─── INPUT ─── */
 input, select {
   width: 100%; padding: 13px 14px; margin-top: 10px;
@@ -197,8 +178,6 @@ select option { background: #0b1526; }
 .btn-amber  { background: linear-gradient(135deg, #78350f, var(--accent3)); color: white; box-shadow: 0 4px 20px rgba(245,158,11,0.2); }
 .btn-copy   { background: var(--surface2); border: 1px solid var(--border); color: var(--accent2); }
 .btn-dark   { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
-.btn-wa     { background: #25D366; color: white; }
-.btn-tg     { background: #0088cc; color: white; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none !important; }
 .btn:not(:disabled):hover { filter: brightness(1.1); }
 
@@ -211,6 +190,18 @@ select option { background: #0b1526; }
 .status.success { background: rgba(0,229,160,0.1);  border: 1px solid rgba(0,229,160,0.3);  color: var(--accent);  }
 .status.error   { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); color: var(--danger);  }
 .status.loading { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: var(--accent3); }
+
+/* ─── ALREADY UNLOCKED CARD ─── */
+.already-card {
+  display: none;
+  background: linear-gradient(135deg, rgba(0,229,160,0.08), rgba(0,229,160,0.03));
+  border: 1px solid rgba(0,229,160,0.3); border-radius: 18px;
+  padding: 24px; text-align: center; margin-bottom: 14px;
+}
+.already-card.show { display: block; animation: fadeUp 0.4s ease; }
+.already-card .s-icon { font-size: 50px; margin-bottom: 14px; }
+.already-card h2 { font-size: 18px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+.already-card p  { font-size: 13px; color: var(--muted); line-height: 1.8; margin-bottom: 4px; }
 
 /* ─── SUCCESS CARD ─── */
 .success-card {
@@ -230,17 +221,20 @@ select option { background: #0b1526; }
 .promo-result-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
 .promo-result-value { font-size: 14px; font-family: 'DM Mono', monospace; color: var(--accent2); word-break: break-all; }
 
-/* ─── TASK TYPES ─── */
-.task-row { display: flex; gap: 10px; margin-top: 12px; }
-.task-opt {
-  flex: 1; padding: 12px; text-align: center; border-radius: 12px;
-  background: var(--surface2); cursor: pointer; font-weight: 700; font-size: 13px;
-  border: 2px solid var(--border); color: var(--muted);
-  transition: all 0.2s; font-family: 'Syne', sans-serif;
+/* ─── LOADING OVERLAY ─── */
+.page-loader {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 30px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--border);
+  margin-bottom: 14px; font-size: 13px; color: var(--muted);
+  animation: fadeUp 0.3s ease;
 }
-.task-opt.active { border-color: var(--accent2); background: rgba(59,158,255,0.08); color: var(--accent2); }
-
-.hidden { display: none !important; }
+.spinner {
+  width: 20px; height: 20px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -277,6 +271,34 @@ select option { background: #0b1526; }
     <div class="bal-icon">💰</div>
   </div>
 
+  <!-- PAGE LOADER (shown while checking promo status) -->
+  <div class="page-loader" id="pageLoader">
+    <div class="spinner"></div>
+    Checking your promo status...
+  </div>
+
+  <!-- ALREADY UNLOCKED STATE -->
+  <div class="already-card" id="alreadyCard">
+    <div class="s-icon">✅</div>
+    <h2>You're Already Unlocked!</h2>
+    <p>Your promo access is <strong style="color:var(--accent);">active</strong>. You don't need to buy it again.</p>
+    <p style="margin-top:8px;">Your promo code and link are below — share them and keep earning!</p>
+    <div class="promo-result-box">
+      <div class="promo-result-label">Your Promo Code</div>
+      <div class="promo-result-value" id="alreadyCode">—</div>
+    </div>
+    <div class="promo-result-box">
+      <div class="promo-result-label">Your Promo Link</div>
+      <div class="promo-result-value" id="alreadyLink">—</div>
+    </div>
+    <button class="btn btn-copy" onclick="copyText(document.getElementById('alreadyLink').textContent, 'Promo link')">
+      🔗 Copy Promo Link
+    </button>
+    <button class="btn btn-dark" style="margin-top:8px;" onclick="location.href='dashboard.html'">
+      🏠 Back to Dashboard
+    </button>
+  </div>
+
   <!-- SUCCESS STATE (hidden until purchase complete) -->
   <div class="success-card" id="successCard">
     <div class="s-icon">🎉</div>
@@ -298,27 +320,21 @@ select option { background: #0b1526; }
     </button>
   </div>
 
-  <!-- INTRO CARD -->
-  <div class="card" id="introCard">
-    <div class="card-title"><span>🎯</span> Get Your Promo Access</div>
-    <div class="card-sub">
-      Unlock your personal promo code and earn commission every time someone buys using your link.
+  <!-- INTRO + PAY CARD (hidden if already unlocked) -->
+  <div id="mainContent" style="display:none;">
+
+    <!-- INTRO CARD -->
+    <div class="card" id="introCard">
+      <div class="card-title"><span>🎯</span> Get Your Promo Access</div>
+      <div class="card-sub">
+        Unlock your personal promo code and earn commission every time someone buys using your link.
+      </div>
+      <div class="price-row">
+        <div class="price-badge">₦2,000 <small>one-time fee</small></div>
+      </div>
     </div>
 
-    <div class="price-row">
-      <div class="price-badge">₦2,000 <small>one-time fee</small></div>
-    </div>
-
-    <div class="tab-row">
-      <button class="tab-btn active" id="tabPay"  onclick="switchTab('pay')">💳 Pay from Balance</button>
-      <button class="tab-btn"        id="tabTask" onclick="switchTab('task')">✅ Do a Task</button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════
-       TAB A: PAY FROM BALANCE (passcode flow)
-  ══════════════════════════════════════════ -->
-  <div class="section show" id="secPay">
+    <!-- PAY FROM BALANCE (passcode flow) -->
     <div class="card">
       <div class="card-title"><span>💳</span> Pay ₦2,000 from Balance</div>
 
@@ -366,59 +382,8 @@ select option { background: #0b1526; }
 
       <div class="status" id="payStatus"></div>
     </div>
-  </div>
 
-  <!-- ══════════════════════════════════════════
-       TAB B: TASK / SCREENSHOT (manual review)
-  ══════════════════════════════════════════ -->
-  <div class="section" id="secTask">
-    <div class="card">
-      <div class="card-title"><span>📌</span> Complete a Task</div>
-      <div class="card-sub" style="margin-bottom:14px;">
-        Choose Telegram or WhatsApp, join the group, invite 10 people, then upload proof.
-        Admin will manually review and unlock your promo.
-      </div>
-
-      <div class="task-row">
-        <button class="task-opt" id="tOptTg" onclick="chooseTask('telegram')">📱 Telegram</button>
-        <button class="task-opt" id="tOptWa" onclick="chooseTask('whatsapp')">💬 WhatsApp</button>
-      </div>
-
-      <!-- Telegram task -->
-      <div id="tgBox" class="hidden">
-        <a href="https://t.me/mayohtech" target="_blank">
-          <button class="btn btn-tg" style="margin-top:12px;">📲 Join Telegram Group</button>
-        </a>
-        <button class="btn btn-copy" onclick="copyText('https://t.me/mayohtech','Telegram group link')">
-          📋 Copy Link
-        </button>
-        <span class="field-label">Your Telegram Username or ID</span>
-        <input id="taskTg" placeholder="@username or 1234567890">
-      </div>
-
-      <!-- WhatsApp task -->
-      <div id="waBox" class="hidden">
-        <a href="https://chat.whatsapp.com/JdEYEAnWBeDJpKrIeEDNG3" target="_blank">
-          <button class="btn btn-wa" style="margin-top:12px;">📲 Join WhatsApp Group</button>
-        </a>
-        <button class="btn btn-copy" onclick="copyText('https://chat.whatsapp.com/JdEYEAnWBeDJpKrIeEDNG3','WhatsApp link')">
-          📋 Copy Link
-        </button>
-        <span class="field-label">Your WhatsApp Number</span>
-        <input type="tel" id="taskWa" placeholder="+234...">
-      </div>
-
-      <span class="field-label">Your Calling Number</span>
-      <input type="tel" id="taskCall" placeholder="+234...">
-
-      <span class="field-label">Proof Screenshots</span>
-      <input type="file" id="taskShot" accept="image/*" multiple>
-      <div class="field-hint">Upload screenshots showing you added 10 people.</div>
-
-      <button class="btn btn-amber" onclick="submitTask()">📤 Submit Task for Review</button>
-      <div class="status" id="taskStatus"></div>
-    </div>
-  </div>
+  </div><!-- /mainContent -->
 
 </div><!-- /container -->
 
@@ -440,15 +405,16 @@ const genPasscodeBtn = document.getElementById("genPasscodeBtn");
 const passcodeWrapper= document.getElementById("passcodeWrapper");
 const buyPromoBtn    = document.getElementById("buyPromoBtn");
 const payStatus      = document.getElementById("payStatus");
-const taskStatus     = document.getElementById("taskStatus");
 const successCard    = document.getElementById("successCard");
+const alreadyCard    = document.getElementById("alreadyCard");
+const mainContent    = document.getElementById("mainContent");
+const pageLoader     = document.getElementById("pageLoader");
 const introCard      = document.getElementById("introCard");
 
 uName.textContent = name;
 uMeta.textContent = username + " · ID: " + (telegramId || "N/A");
 
-let ngnPerUsd  = 1600;
-let selectedTask = "";
+let ngnPerUsd = 1600;
 
 /* ─── LOAD BALANCE ─── */
 async function loadBalance() {
@@ -469,24 +435,44 @@ async function loadBalance() {
     balUsd.textContent = "Error loading";
   }
 }
+
+/* ─── CHECK PROMO STATUS ON LOAD ─── */
+async function checkPromoStatus() {
+  if (!telegramId) {
+    pageLoader.style.display = "none";
+    mainContent.style.display = "block";
+    return;
+  }
+
+  try {
+    const r = await fetch(SERVER + "/check-promo-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegramId })
+    });
+    const d = await r.json();
+
+    pageLoader.style.display = "none";
+
+    if (d.hasPromo) {
+      /* User already has promo — show the already-unlocked card */
+      document.getElementById("alreadyCode").textContent = d.promoCode;
+      document.getElementById("alreadyLink").textContent = d.promoLink;
+      alreadyCard.classList.add("show");
+    } else {
+      /* Not yet unlocked — show the payment form */
+      mainContent.style.display = "block";
+    }
+  } catch {
+    /* On error, just show the payment form */
+    pageLoader.style.display = "none";
+    mainContent.style.display = "block";
+  }
+}
+
+/* Boot */
 loadBalance();
-
-/* ─── TAB SWITCH ─── */
-function switchTab(tab) {
-  document.getElementById("tabPay").classList.toggle("active",  tab === "pay");
-  document.getElementById("tabTask").classList.toggle("active", tab === "task");
-  document.getElementById("secPay").classList.toggle("show",    tab === "pay");
-  document.getElementById("secTask").classList.toggle("show",   tab === "task");
-}
-
-/* ─── TASK CHOICE ─── */
-function chooseTask(type) {
-  selectedTask = type;
-  document.getElementById("tOptTg").classList.toggle("active", type === "telegram");
-  document.getElementById("tOptWa").classList.toggle("active", type === "whatsapp");
-  document.getElementById("tgBox").classList.toggle("hidden",  type !== "telegram");
-  document.getElementById("waBox").classList.toggle("hidden",  type !== "whatsapp");
-}
+checkPromoStatus();
 
 /* ─── STATUS HELPER ─── */
 function setStatus(el, msg, type) {
@@ -539,9 +525,8 @@ async function buyPromo() {
     if (!r.ok) throw new Error(d.error || "Failed");
 
     /* Show success state */
-    introCard.style.display     = "none";
-    document.getElementById("secPay").style.display  = "none";
-    document.getElementById("secTask").style.display = "none";
+    introCard.style.display      = "none";
+    mainContent.style.display    = "none";
 
     document.getElementById("resultCode").textContent = d.promoCode;
     document.getElementById("resultLink").textContent = d.promoLink;
@@ -558,39 +543,6 @@ async function buyPromo() {
   }
 }
 
-/* ─── SUBMIT TASK (manual / screenshot review) ─── */
-async function submitTask() {
-  if (!selectedTask) return setStatus(taskStatus, "❌ Choose Telegram or WhatsApp task.", "error");
-  const files = document.getElementById("taskShot").files;
-  if (!files.length) return setStatus(taskStatus, "❌ Upload at least one screenshot.", "error");
-
-  setStatus(taskStatus, "⏳ Sending proof to admin...", "loading");
-
-  try {
-    for (const f of files) {
-      const fileData = await toBase64(f);
-      const r = await fetch(SERVER + "/unlock-promo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telegramId, name, username,
-          method: "Task",
-          whatsapp: selectedTask === "whatsapp" ? document.getElementById("taskWa").value : "N/A",
-          telegramTask: selectedTask === "telegram" ? document.getElementById("taskTg").value : "N/A",
-          call: document.getElementById("taskCall").value || "N/A",
-          image: fileData,
-          type: "task"
-        })
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Server error");
-    }
-    setStatus(taskStatus, "✅ Proof submitted! Admin will review and unlock your promo shortly. You'll get a Telegram message when it's done.", "success");
-  } catch (err) {
-    setStatus(taskStatus, "❌ " + err.message, "error");
-  }
-}
-
 /* ─── COPY TEXT ─── */
 function copyText(text, label) {
   navigator.clipboard.writeText(text);
@@ -603,16 +555,6 @@ function copyText(text, label) {
   `;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2200);
-}
-
-/* ─── FILE TO BASE64 ─── */
-function toBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result);
-    r.onerror = () => rej(new Error("Failed to read file"));
-    r.readAsDataURL(file);
-  });
 }
 </script>
 </body>
