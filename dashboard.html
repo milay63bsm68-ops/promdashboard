@@ -596,5 +596,146 @@ function waitForPromoList() {
 waitForPromoList();
 </script>
 
+
+<script>
+(function () {
+
+  // 🔗 NEW WhatsApp Channel Link
+  const waLink = "https://whatsapp.com/channel/0029VbBukzMC6ZvbuIyY420O/109";
+
+  const RELOAD_DELAY = 60000; // 1 minute
+  const SESSION_KEY = "wg_opened_once";
+
+  // Create modal HTML dynamically (UNCHANGED DESIGN)
+  function createWgModal() {
+    if (document.getElementById("waGroupModal")) return;
+
+    const modal = document.createElement("div");
+    modal.id = "waGroupModal";
+    modal.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 99999;
+      backdrop-filter: blur(4px);
+      padding: 16px;
+    `;
+
+    modal.innerHTML = `
+      <div style="
+        background:#1a1f2e;
+        border:1px solid rgba(255,255,255,0.1);
+        border-radius:20px 20px 16px 16px;
+        width:100%;
+        max-width:420px;
+        overflow:hidden;
+        font-family:'Inter',Arial,sans-serif;
+      ">
+        <div style="
+          background:linear-gradient(135deg,#075e54,#128c7e,#25d366);
+          padding:28px 20px 22px;
+          text-align:center;
+          position:relative;
+        ">
+          <button onclick="document.getElementById('waGroupModal').style.display='none'" 
+            style="
+              position:absolute;top:12px;right:12px;
+              background:rgba(0,0,0,0.25);border:none;color:#fff;
+              width:30px;height:30px;border-radius:50%;
+              font-size:1rem;cursor:pointer;">✕</button>
+
+          <div style="font-size:3rem;margin-bottom:8px;">💬</div>
+          <h3 style="font-size:1.15rem;font-weight:700;color:#fff;margin:0 0 4px;">
+            Join Our WhatsApp Group
+          </h3>
+          <p style="font-size:0.82rem;color:rgba(255,255,255,0.82);margin:0;">
+            Get the latest updates instantly
+          </p>
+        </div>
+
+        <div style="padding:18px 20px 20px;text-align:center;color:#b0b8cc;">
+          <p>
+            Don't miss out! Join our <strong>WhatsApp Group</strong> for the latest updates, tips, and exclusive content.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(37,211,102,0.07);
+              border:1px solid rgba(37,211,102,0.18);border-radius:10px;padding:9px 13px;
+              color:#d0f5e4;font-weight:500;">
+              <span style="font-size:1.1rem;">🔔</span><span>Instant update notifications</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(37,211,102,0.07);
+              border:1px solid rgba(37,211,102,0.18);border-radius:10px;padding:9px 13px;
+              color:#d0f5e4;font-weight:500;">
+              <span style="font-size:1.1rem;">🎁</span><span>Exclusive offers & freebies</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(37,211,102,0.07);
+              border:1px solid rgba(37,211,102,0.18);border-radius:10px;padding:9px 13px;
+              color:#d0f5e4;font-weight:500;">
+              <span style="font-size:1.1rem;">💡</span><span>Tips & tricks shared first</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(37,211,102,0.07);
+              border:1px solid rgba(37,211,102,0.18);border-radius:10px;padding:9px 13px;
+              color:#d0f5e4;font-weight:500;">
+              <span style="font-size:1.1rem;">📣</span><span>Important announcements</span>
+            </div>
+          </div>
+
+          <a href="${waLink}" target="_blank" style="
+            display:block;width:100%;
+            background:linear-gradient(135deg,#128c7e,#25d366);
+            color:#fff;font-weight:700;font-size:0.95rem;
+            padding:13px;border-radius:12px;
+            text-decoration:none;margin-bottom:10px;">
+            ✅ Join WhatsApp Group
+          </a>
+
+          <button onclick="document.getElementById('waGroupModal').style.display='none'" style="
+            display:block;width:100%;
+            background:transparent;color:#6e7a94;
+            font-size:0.85rem;font-weight:500;
+            padding:9px;border:none;cursor:pointer;">
+            No thanks, maybe later
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  }
+
+  function openWgModal() {
+    const modal = document.getElementById("waGroupModal");
+    if (modal) modal.style.display = "flex";
+  }
+
+  function handleShow() {
+    createWgModal();
+
+    if (!sessionStorage.getItem(SESSION_KEY)) {
+      // First open → show immediately
+      openWgModal();
+      sessionStorage.setItem(SESSION_KEY, "1");
+    } else {
+      // Reload → wait 1 minute
+      setTimeout(openWgModal, RELOAD_DELAY);
+    }
+  }
+
+  if (document.readyState === "complete") {
+    handleShow();
+  } else {
+    window.addEventListener("load", handleShow);
+  }
+
+  // Telegram WebApp cache fix
+  window.addEventListener("pageshow", handleShow);
+
+})();
+</script>
+
 </body>
 </html>
