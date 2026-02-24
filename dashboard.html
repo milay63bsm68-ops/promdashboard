@@ -447,7 +447,7 @@ function toggleBalanceActions() {
 async function getUserBalance() {
   if (!telegramId) return 0;
   try {
-    const res = await fetch("https://promdashboard.onrender.com/get-balance", {
+    const res = await fetch("/get-balance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ telegramId })
